@@ -1,0 +1,4 @@
+source_transaction_id,source_client_id,source_account_id,source_product_id,channel_code,operation_type_code,operation_ts,amount,currency_code,direction,status,merchant_name,description
+TXN-T001,ABS-C001,ACC-A001,PRD-P001,MB,PAYMENT,2026-03-15T10:30:00+03:00,1500.50,RUB,D,POSTED,COFFEE_SHOP,Оплата картой
+TXN-T002,ABS-C001,ACC-A001,,IB,TRANSFER,2026-03-16T18:00:00+03:00,5000.00,RUB,D,POSTED,,Перевод физлицу
+TXN-T003,ABS-C002,ACC-A003,PRD-P002,BRANCH,CASH_IN,2026-03-10T12:00:00+03:00,25000.00,RUB,C,POSTED,,Пополнение в отделении

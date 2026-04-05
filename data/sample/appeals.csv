@@ -1,0 +1,3 @@
+source_appeal_id,source_client_id,channel_code,appeal_type_code,created_ts,resolved_ts,status,priority,result_text
+APL-001,ABS-C001,CC,SUPPORT,2026-03-01T11:00:00+03:00,2026-03-01T15:00:00+03:00,CLOSED,2,Вопрос по лимиту
+APL-002,ABS-C002,IB,REQUEST,2026-03-12T08:30:00+03:00,,OPEN,1,

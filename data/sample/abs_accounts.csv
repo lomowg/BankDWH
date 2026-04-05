@@ -1,0 +1,4 @@
+source_account_id,source_client_id,account_number_masked,account_type,currency_code,opened_at,closed_at,status
+ACC-A001,ABS-C001,40817***1001,CURRENT,RUB,2021-03-05,,ACTIVE
+ACC-A002,ABS-C001,40817***1002,SAVINGS,RUB,2022-01-10,,ACTIVE
+ACC-A003,ABS-C002,40817***2001,CURRENT,RUB,2022-06-20,,ACTIVE

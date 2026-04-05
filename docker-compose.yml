@@ -1,0 +1,257 @@
+name: bank_dwh
+
+x-airflow-common: &airflow-common
+  build:
+    context: ./airflow
+    dockerfile: Dockerfile
+  image: bank_dwh_airflow:2.10.4-python3.12
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-dwh}:${POSTGRES_PASSWORD:-dwh_secret}@postgres:5432/airflow
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-Mm6O6AKe_GZsPjpqeYoRwTsXUexcivZbudj331sWXps=}
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_WEBSERVER_SECRET_KEY:-airflow_dev_secret_change_me}
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+    DATABASE_URL: postgresql://${POSTGRES_USER:-dwh}:${POSTGRES_PASSWORD:-dwh_secret}@postgres:5432/${POSTGRES_DB:-bank_dwh}
+    POSTGRES_HOST: postgres
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: ${POSTGRES_USER:-dwh}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dwh_secret}
+    POSTGRES_DB: ${POSTGRES_DB:-bank_dwh}
+    ETL_SAMPLE_DATA_DIR: /opt/airflow/data/sample
+    CLICKHOUSE_HOST: clickhouse
+    CLICKHOUSE_HTTP_PORT: "8123"
+    CLICKHOUSE_DATABASE: bank_marts
+    CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+    CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+    AIRFLOW__METRICS__STATSD_ON: "True"
+    AIRFLOW__METRICS__STATSD_HOST: statsd-exporter
+    AIRFLOW__METRICS__STATSD_PORT: "8125"
+    AIRFLOW__METRICS__STATSD_PREFIX: airflow
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./data:/opt/airflow/data:ro
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/plugins:/opt/airflow/plugins
+  user: "${AIRFLOW_UID:-50000}:0"
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8-alpine
+    container_name: bank_marts_clickhouse
+    ports:
+      - "${CLICKHOUSE_HTTP_PORT:-8123}:8123"
+      - "${CLICKHOUSE_NATIVE_PORT:-9000}:9000"
+    environment:
+      CLICKHOUSE_DB: bank_marts
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./sql/clickhouse/init:/docker-entrypoint-initdb.d:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  postgres:
+    image: postgres:17
+    container_name: bank_dwh_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dwh}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dwh_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-bank_dwh}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/postgresql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: bank_airflow_init
+    environment:
+      <<: *airflow-common-env
+      AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_WWW_USER_USERNAME:-airflow}
+      AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_WWW_USER_PASSWORD:-airflow}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create \
+          --username "$${AIRFLOW_WWW_USER_USERNAME}" \
+          --password "$${AIRFLOW_WWW_USER_PASSWORD}" \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@localhost || true
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: bank_airflow_scheduler
+    command: scheduler
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname $$(hostname)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_started
+      statsd-exporter:
+        condition: service_started
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: bank_airflow_webserver
+    command: webserver
+    ports:
+      - "${AIRFLOW_WEBSERVER_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_started
+      statsd-exporter:
+        condition: service_started
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: bank_prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: bank_grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: bank_blackbox_exporter
+    command:
+      - --config.file=/config/blackbox.yml
+    volumes:
+      - ./monitoring/blackbox/blackbox.yml:/config/blackbox.yml:ro
+    ports:
+      - "${BLACKBOX_PORT:-9115}:9115"
+    restart: unless-stopped
+
+  statsd-exporter:
+    image: prom/statsd-exporter:v0.26.0
+    container_name: bank_statsd_exporter
+    command:
+      - --statsd.listen-udp=:8125
+      - --statsd.listen-tcp=:8125
+    ports:
+      - "${STATSD_EXPORTER_METRICS_PORT:-9102}:9102"
+      - "${STATSD_EXPORTER_UDP_PORT:-8125}:8125/udp"
+    restart: unless-stopped
+
+  postgres-exporter-dwh:
+    image: prometheuscommunity/postgres-exporter:v0.17.1
+    container_name: bank_postgres_exporter_dwh
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-dwh}:${POSTGRES_PASSWORD:-dwh_secret}@postgres:5432/bank_dwh?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${POSTGRES_EXPORTER_DWH_PORT:-9187}:9187"
+    restart: unless-stopped
+
+  postgres-exporter-airflow:
+    image: prometheuscommunity/postgres-exporter:v0.17.1
+    container_name: bank_postgres_exporter_airflow
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-dwh}:${POSTGRES_PASSWORD:-dwh_secret}@postgres:5432/airflow?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    ports:
+      - "${POSTGRES_EXPORTER_AIRFLOW_PORT:-9188}:9187"
+    restart: unless-stopped
+
+  clickhouse-exporter:
+    image: f1yegor/clickhouse-exporter:latest
+    container_name: bank_clickhouse_exporter
+    command:
+      - -scrape_uri=http://default@clickhouse:8123/
+    depends_on:
+      - clickhouse
+    ports:
+      - "${CLICKHOUSE_EXPORTER_PORT:-9116}:9116"
+    restart: unless-stopped
+
+  analytics-api:
+    build:
+      context: ./analytics_api
+      dockerfile: Dockerfile
+    image: bank_dwh_analytics_api:1.0
+    container_name: bank_analytics_api
+    environment:
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_HTTP_PORT: "8123"
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+      CLICKHOUSE_DATABASE: bank_marts
+      ANALYTICS_API_KEY: ${ANALYTICS_API_KEY:-}
+    ports:
+      - "${ANALYTICS_API_PORT:-8000}:8000"
+    depends_on:
+      - clickhouse
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  clickhouse_data:
+  prometheus_data:
+  grafana_data:

@@ -1,0 +1,4 @@
+source_event_id,source_client_id,channel_code,event_type_code,event_ts,device_type,platform,session_id,success_flag,payload_json
+EVT-E001,ABS-C001,MB,LOGIN,2026-03-15T10:25:00+03:00,PHONE,Android,sess-abc-1,true,{"screen":"main"}
+EVT-E002,ABS-C001,IB,SCREEN_VIEW,2026-03-16T17:55:00+03:00,DESKTOP,Web,sess-abc-2,true,{"screen":"transfers"}
+EVT-E003,ABS-C002,MB,PAYMENT_INIT,2026-03-11T09:00:00+03:00,PHONE,iOS,sess-def-1,false,{"error":"limit"}

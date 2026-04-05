@@ -1,0 +1,3 @@
+source_client_id,tax_id,phone,email,region_code,loyalty_tier
+CRM-P001,770101001234,+79001112233,ivan.p@mail.ru,77,GOLD
+CRM-P002,770202005678,+79002223344,maria.s@mail.ru,78,SILVER

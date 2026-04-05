@@ -1,0 +1,3 @@
+source_client_id,client_type,first_name,last_name,middle_name,birth_date,registration_date,tax_id,phone,email,region_code,status
+ABS-C001,INDIVIDUAL,Иван,Петров,Сергеевич,1990-05-12,2021-03-01,770101001234,+79001112233,ivan.p@mail.ru,77,ACTIVE
+ABS-C002,INDIVIDUAL,Мария,Сидорова,,1988-11-30,2022-06-15,770202005678,+79002223344,maria.s@mail.ru,78,ACTIVE

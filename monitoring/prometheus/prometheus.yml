@@ -1,0 +1,59 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: postgres_bank_dwh
+    static_configs:
+      - targets: ["postgres-exporter-dwh:9187"]
+        labels:
+          database: bank_dwh
+
+  - job_name: postgres_airflow
+    static_configs:
+      - targets: ["postgres-exporter-airflow:9187"]
+        labels:
+          database: airflow_meta
+
+  - job_name: clickhouse_exporter
+    static_configs:
+      - targets: ["clickhouse-exporter:9116"]
+
+  - job_name: statsd_exporter
+    static_configs:
+      - targets: ["statsd-exporter:9102"]
+
+  - job_name: blackbox_http
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://airflow-webserver:8080/health
+          - http://clickhouse:8123/ping
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  - job_name: blackbox_tcp
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets:
+          - postgres:5432
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

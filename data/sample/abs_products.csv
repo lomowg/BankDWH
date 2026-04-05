@@ -1,0 +1,3 @@
+source_product_id,source_client_id,source_account_id,product_type_code,product_name,currency_code,opened_at,closed_at,status,amount_limit,interest_rate
+PRD-P001,ABS-C001,ACC-A001,CARD,Дебетовая карта Мир,RUB,2021-03-06,,ACTIVE,300000.00,
+PRD-P002,ABS-C002,ACC-A003,DEPOSIT,Накопительный счёт,RUB,2022-06-21,,ACTIVE,,4.5000
