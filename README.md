@@ -1,24 +1,45 @@
 ﻿# BankDWH
 
-## Запустить проект:
-1. Скачать Docker Desktop
-2. Перейти в терминале в папку с проектом
-3. ``` docker build -f Dockerfile.airflow.k8s -t bank_dwh_airflow:2.10.4-python3.12 . ```
-4. ``` docker build -t bank_dwh_analytics_api:1.0 ./analytics_api ```
-5. ``` kind load docker-image bank_dwh_airflow:2.10.4-python3.12 ```
-6. ``` kind load docker-image bank_dwh_analytics_api:1.0 ```
-7. ``` powershell -ExecutionPolicy Bypass -File k8s/apply.ps1 ```
+## Запуск в Kubernetes (kind + Docker Desktop)
 
-* Убедиться, что всё поднялось (везде статус Running):
-    ``` kubectl get pods -n bank-dwh ```
+**Нужно заранее:** Docker Desktop запущен, установлены [kind](https://kind.sigs.k8s.io/) и `kubectl`, контекст указывает на ваш кластер (`kubectl cluster-info` без ошибки). Если кластера ещё нет:
 
-Чтобы открывать сервисы (в отдельных окнах PowerShell):
-``` kubectl port-forward -n bank-dwh svc/airflow-webserver 8080:8080 ```
-``` kubectl port-forward -n bank-dwh svc/grafana 3000:3000 ```
-``` kubectl port-forward -n bank-dwh svc/prometheus 9090:9090 ```
-``` kubectl port-forward -n bank-dwh svc/analytics-api 8000:8000 ```
+```text
+kind create cluster
+```
 
-В браузере:
-* Airflow: http://localhost:8080 — пользователь airflow, пароль из 01-secrets.yaml → airflow-www-password.
-* Grafana: http://localhost:3000 — admin и пароль из grafana-admin-password.
-* Analytics API: http://localhost:8000/docs
+**Перед первым деплоем** при необходимости отредактируйте пароли и строки подключения в `k8s/manifests/secrets.yaml`.
+
+Дальше из **корня репозитория**:
+
+```powershell
+docker build -f Dockerfile.airflow.k8s -t bank_dwh_airflow:2.10.4-python3.12 .
+docker build -t bank_dwh_analytics_api:1.0 ./analytics_api
+kind load docker-image bank_dwh_airflow:2.10.4-python3.12
+kind load docker-image bank_dwh_analytics_api:1.0
+powershell -ExecutionPolicy Bypass -File k8s/apply.ps1
+```
+
+Если кластер kind не с именем по умолчанию, добавьте `--name <имя>` к командам `kind load`.
+
+Проверка подов (ожидайте `Running` / готовность `1/1`):
+
+```powershell
+kubectl get pods -n bank-dwh
+```
+
+**Доступ к сервисам** (отдельное окно PowerShell на каждую команду):
+
+```powershell
+kubectl port-forward -n bank-dwh svc/airflow-webserver 8080:8080
+kubectl port-forward -n bank-dwh svc/grafana 3000:3000
+kubectl port-forward -n bank-dwh svc/prometheus 9090:9090
+kubectl port-forward -n bank-dwh svc/analytics-api 8000:8000
+```
+
+**В браузере**
+
+- Airflow: http://localhost:8080 — пользователь `airflow`, пароль: ключ `airflow-www-password` в `k8s/manifests/secrets.yaml`.
+- Grafana: http://localhost:3000 — пользователь `admin`, пароль: ключ `grafana-admin-password` в том же файле.
+- Analytics API: http://localhost:8000/docs
+

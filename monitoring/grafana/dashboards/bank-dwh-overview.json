@@ -43,7 +43,7 @@
           "refId": "A"
         }
       ],
-      "title": "Проверки HTTP: Airflow / ClickHouse",
+      "title": "HTTP probes: Airflow / ClickHouse",
       "type": "stat"
     },
     {
@@ -92,7 +92,7 @@
           "refId": "C"
         }
       ],
-      "title": "Состояние БД",
+      "title": "Database status",
       "type": "stat"
     },
     {
@@ -125,17 +125,17 @@
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "pg_stat_database_numbackends{datname=\"bank_dwh\",job=\"postgres_bank_dwh\"}",
-          "legendFormat": "Сессии bank_dwh",
+          "legendFormat": "Sessions bank_dwh",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "pg_stat_database_numbackends{datname=\"airflow\",job=\"postgres_airflow\"}",
-          "legendFormat": "Сессии airflow",
+          "legendFormat": "Sessions airflow",
           "refId": "B"
         }
       ],
-      "title": "Подключения к PostgreSQL",
+      "title": "PostgreSQL connections",
       "type": "timeseries"
     },
     {
@@ -161,7 +161,7 @@
           "refId": "A"
         }
       ],
-      "title": "Доступность целей Prometheus",
+      "title": "Prometheus targets (up)",
       "type": "timeseries"
     }
   ],
@@ -172,7 +172,7 @@
   "time": { "from": "now-6h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Bank DWH — обзор",
+  "title": "Bank DWH overview",
   "uid": "bank-dwh-overview",
-  "version": 1
+  "version": 2
 }
