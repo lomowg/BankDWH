@@ -1,0 +1,474 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-webserver
+  namespace: bank-dwh
+  labels:
+    app: airflow-webserver
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: airflow-webserver
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-scheduler
+  namespace: bank-dwh
+  labels:
+    app: airflow-scheduler
+spec:
+  type: ClusterIP
+  ports:
+    - name: worker-logs
+      port: 8793
+      targetPort: 8793
+  selector:
+    app: airflow-scheduler
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-scheduler
+  namespace: bank-dwh
+  labels:
+    app: airflow-scheduler
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: airflow-scheduler
+  template:
+    metadata:
+      labels:
+        app: airflow-scheduler
+    spec:
+      hostname: airflow-scheduler
+      securityContext:
+        fsGroup: 50000
+      initContainers:
+        - name: wait-postgres
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z postgres 5432; do sleep 2; done"]
+        - name: wait-clickhouse
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z clickhouse 8123; do sleep 2; done"]
+        - name: airflow-db-init
+          image: bank_dwh_airflow:2.10.4-python3.12
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 50000
+            runAsGroup: 0
+          env:
+            - name: AIRFLOW_WWW_USER_USERNAME
+              value: "airflow"
+            - name: AIRFLOW_WWW_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: airflow-www-password
+            - name: AIRFLOW__CORE__EXECUTOR
+              value: LocalExecutor
+            - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: airflow-metadata-conn
+            - name: AIRFLOW__CORE__FERNET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: airflow-fernet-key
+            - name: AIRFLOW__WEBSERVER__SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: airflow-webserver-secret-key
+            - name: AIRFLOW__CORE__LOAD_EXAMPLES
+              value: "false"
+            - name: AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION
+              value: "true"
+            - name: AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK
+              value: "true"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: dwh-database-url
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: dwh
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: postgres-password
+            - name: POSTGRES_DB
+              value: bank_dwh
+            - name: ETL_SAMPLE_DATA_DIR
+              value: /opt/airflow/data/sample
+            - name: CLICKHOUSE_HOST
+              value: clickhouse
+            - name: CLICKHOUSE_HTTP_PORT
+              value: "8123"
+            - name: CLICKHOUSE_DATABASE
+              value: bank_marts
+            - name: CLICKHOUSE_USER
+              value: default
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: clickhouse-password
+            - name: AIRFLOW__METRICS__STATSD_ON
+              value: "True"
+            - name: AIRFLOW__METRICS__STATSD_HOST
+              value: statsd-exporter
+            - name: AIRFLOW__METRICS__STATSD_PORT
+              value: "8125"
+            - name: AIRFLOW__METRICS__STATSD_PREFIX
+              value: airflow
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -e
+              airflow db migrate
+              airflow users create \
+                --username "${AIRFLOW_WWW_USER_USERNAME}" \
+                --password "${AIRFLOW_WWW_USER_PASSWORD}" \
+                --firstname Admin \
+                --lastname User \
+                --role Admin \
+                --email admin@localhost || true
+      containers:
+        - name: scheduler
+          image: bank_dwh_airflow:2.10.4-python3.12
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 50000
+            runAsGroup: 0
+          args: ["scheduler"]
+          ports:
+            - containerPort: 8793
+              name: worker-logs
+          env:
+            - name: AIRFLOW__CORE__EXECUTOR
+              value: LocalExecutor
+            - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: airflow-metadata-conn
+            - name: AIRFLOW__CORE__FERNET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: airflow-fernet-key
+            - name: AIRFLOW__WEBSERVER__SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: airflow-webserver-secret-key
+            - name: AIRFLOW__CORE__LOAD_EXAMPLES
+              value: "false"
+            - name: AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION
+              value: "true"
+            - name: AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK
+              value: "true"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: dwh-database-url
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: dwh
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: postgres-password
+            - name: POSTGRES_DB
+              value: bank_dwh
+            - name: ETL_SAMPLE_DATA_DIR
+              value: /opt/airflow/data/sample
+            - name: CLICKHOUSE_HOST
+              value: clickhouse
+            - name: CLICKHOUSE_HTTP_PORT
+              value: "8123"
+            - name: CLICKHOUSE_DATABASE
+              value: bank_marts
+            - name: CLICKHOUSE_USER
+              value: default
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: clickhouse-password
+            - name: AIRFLOW__METRICS__STATSD_ON
+              value: "True"
+            - name: AIRFLOW__METRICS__STATSD_HOST
+              value: statsd-exporter
+            - name: AIRFLOW__METRICS__STATSD_PORT
+              value: "8125"
+            - name: AIRFLOW__METRICS__STATSD_PREFIX
+              value: airflow
+          volumeMounts:
+            - name: logs
+              mountPath: /opt/airflow/logs
+          startupProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - airflow jobs check --job-type SchedulerJob --hostname $$(hostname)
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - airflow jobs check --job-type SchedulerJob --hostname $$(hostname)
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - airflow jobs check --job-type SchedulerJob --hostname $$(hostname)
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+      volumes:
+        - name: logs
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-webserver
+  namespace: bank-dwh
+  labels:
+    app: airflow-webserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-webserver
+  template:
+    metadata:
+      labels:
+        app: airflow-webserver
+    spec:
+      securityContext:
+        fsGroup: 50000
+      initContainers:
+        - name: wait-postgres
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z postgres 5432; do sleep 2; done"]
+        - name: wait-clickhouse
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z clickhouse 8123; do sleep 2; done"]
+        - name: wait-airflow-metadata
+          image: bank_dwh_airflow:2.10.4-python3.12
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 50000
+            runAsGroup: 0
+          env:
+            - name: AIRFLOW__CORE__EXECUTOR
+              value: LocalExecutor
+            - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: airflow-metadata-conn
+            - name: AIRFLOW__CORE__FERNET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: airflow-fernet-key
+            - name: AIRFLOW__WEBSERVER__SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: airflow-webserver-secret-key
+            - name: AIRFLOW__CORE__LOAD_EXAMPLES
+              value: "false"
+            - name: AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION
+              value: "true"
+            - name: AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK
+              value: "true"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: dwh-database-url
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: dwh
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: postgres-password
+            - name: POSTGRES_DB
+              value: bank_dwh
+            - name: ETL_SAMPLE_DATA_DIR
+              value: /opt/airflow/data/sample
+            - name: CLICKHOUSE_HOST
+              value: clickhouse
+            - name: CLICKHOUSE_HTTP_PORT
+              value: "8123"
+            - name: CLICKHOUSE_DATABASE
+              value: bank_marts
+            - name: CLICKHOUSE_USER
+              value: default
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: clickhouse-password
+            - name: AIRFLOW__METRICS__STATSD_ON
+              value: "True"
+            - name: AIRFLOW__METRICS__STATSD_HOST
+              value: statsd-exporter
+            - name: AIRFLOW__METRICS__STATSD_PORT
+              value: "8125"
+            - name: AIRFLOW__METRICS__STATSD_PREFIX
+              value: airflow
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -e
+              for i in $(seq 1 120); do
+                airflow db check && exit 0
+                sleep 2
+              done
+              exit 1
+      containers:
+        - name: webserver
+          image: bank_dwh_airflow:2.10.4-python3.12
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 50000
+            runAsGroup: 0
+          args: ["webserver"]
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: AIRFLOW__CORE__EXECUTOR
+              value: LocalExecutor
+            - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: airflow-metadata-conn
+            - name: AIRFLOW__CORE__FERNET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: airflow-fernet-key
+            - name: AIRFLOW__WEBSERVER__SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: airflow-webserver-secret-key
+            - name: AIRFLOW__CORE__LOAD_EXAMPLES
+              value: "false"
+            - name: AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION
+              value: "true"
+            - name: AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK
+              value: "true"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: dwh-database-url
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: dwh
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: postgres-password
+            - name: POSTGRES_DB
+              value: bank_dwh
+            - name: ETL_SAMPLE_DATA_DIR
+              value: /opt/airflow/data/sample
+            - name: CLICKHOUSE_HOST
+              value: clickhouse
+            - name: CLICKHOUSE_HTTP_PORT
+              value: "8123"
+            - name: CLICKHOUSE_DATABASE
+              value: bank_marts
+            - name: CLICKHOUSE_USER
+              value: default
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bank-dwh-secrets
+                  key: clickhouse-password
+            - name: AIRFLOW__METRICS__STATSD_ON
+              value: "True"
+            - name: AIRFLOW__METRICS__STATSD_HOST
+              value: statsd-exporter
+            - name: AIRFLOW__METRICS__STATSD_PORT
+              value: "8125"
+            - name: AIRFLOW__METRICS__STATSD_PREFIX
+              value: airflow
+          volumeMounts:
+            - name: logs
+              mountPath: /opt/airflow/logs
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+      volumes:
+        - name: logs
+          emptyDir: {}

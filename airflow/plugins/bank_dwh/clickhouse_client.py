@@ -15,16 +15,19 @@ def ch_database() -> str:
 
 
 def ch_client():
-    password = os.getenv("CLICKHOUSE_PASSWORD")
+    raw = os.getenv("CLICKHOUSE_PASSWORD")
+    password = None if raw is None or not str(raw).strip() else raw
     host = os.getenv("CLICKHOUSE_HOST", "localhost")
     port_s = os.getenv("CLICKHOUSE_HTTP_PORT") or os.getenv("CLICKHOUSE_PORT", "8123")
     port = int(port_s)
     if port == 9000:
         port = 8123
-    return clickhouse_connect.get_client(
+    kwargs = dict(
         host=host,
         port=port,
         username=os.getenv("CLICKHOUSE_USER", "default"),
-        password="" if password is None else password,
         database=ch_database(),
     )
+    if password is not None:
+        kwargs["password"] = password
+    return clickhouse_connect.get_client(**kwargs)

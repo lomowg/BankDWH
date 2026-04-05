@@ -16,13 +16,16 @@ def get_client() -> Any:
         port = settings.clickhouse_http_port
         if port == 9000:
             port = 8123
-        _client = clickhouse_connect.get_client(
+        kwargs = dict(
             host=settings.clickhouse_host,
             port=port,
             username=settings.clickhouse_user,
-            password=settings.clickhouse_password or "",
             database=settings.clickhouse_database,
         )
+        pw = (settings.clickhouse_password or "").strip()
+        if pw:
+            kwargs["password"] = pw
+        _client = clickhouse_connect.get_client(**kwargs)
     return _client
 
 
