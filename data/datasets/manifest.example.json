@@ -1,0 +1,34 @@
+{
+  "_comment": "Копируйте фрагменты в manifest.json; пути file — относительно data/datasets/",
+  "additional_loaders": [
+    {
+      "file": "Bank Transaction Data/bank_transactions_data_2.csv",
+      "table": "stg.abs_transactions_raw",
+      "columns": [
+        "source_transaction_id",
+        "source_client_id",
+        "source_account_id",
+        "source_product_id",
+        "channel_code",
+        "operation_type_code",
+        "operation_ts",
+        "amount",
+        "currency_code",
+        "direction",
+        "status",
+        "merchant_name",
+        "description"
+      ],
+      "column_map": {
+        "TransactionID": "source_transaction_id",
+        "AccountID": "source_account_id",
+        "TransactionAmount": "amount",
+        "TransactionDate": "operation_ts",
+        "TransactionType": "operation_type_code",
+        "Channel": "channel_code",
+        "MerchantID": "merchant_name",
+        "Location": "description"
+      }
+    }
+  ]
+}

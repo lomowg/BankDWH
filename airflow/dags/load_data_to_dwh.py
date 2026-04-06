@@ -1,5 +1,10 @@
 """
-Синхронизация источников (CSV в data/sample) -> PostgreSQL: stg -> dwh -> client_profile_export.
+Синхронизация источников (CSV) -> PostgreSQL: stg -> dwh -> client_profile_export.
+
+Источники:
+  - data/sample (или ETL_SAMPLE_DATA_DIR)
+  - data/datasets/ (или ETL_DATASETS_DIR)
+  - data/datasets/manifest.json — additional_loaders для внешних CSV и column_map
 
 Параметры:
   {"reset": true} - очистка таблиц (TRUNCATE stg/dwh фактов)
@@ -9,6 +14,7 @@
 from __future__ import annotations
 
 import csv
+import io
 import json
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
@@ -21,7 +27,7 @@ import pendulum
 import psycopg
 from airflow.decorators import dag, task
 from airflow.operators.python import get_current_context
-from bank_dwh import database_url, sample_data_dir
+from bank_dwh import database_url, datasets_data_dir, sample_data_dir
 from bank_dwh.airflow_utils import dag_conf, report_date_for_dag
 from psycopg.types.json import Json
 
@@ -29,11 +35,117 @@ _DAGS_DIR = Path(__file__).resolve().parent
 
 
 def _read_csv(path: Path) -> list[dict[str, Any]]:
-    with path.open(encoding="utf-8-sig", newline="") as f:
-        return list(csv.DictReader(f))
+    """Читает CSV в Unicode: UTF-8 (с BOM), UTF-16 LE/BE, иначе UTF-8 или cp1251"""
+    raw = path.read_bytes()
+    if raw.startswith(b"\xff\xfe"):
+        text = raw.decode("utf-16-le")
+    elif raw.startswith(b"\xfe\xff"):
+        text = raw.decode("utf-16-be")
+    else:
+        try:
+            text = raw.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            text = raw.decode("cp1251")
+    return list(csv.DictReader(io.StringIO(text, newline="")))
 
 
-def load_all_csv(conn: psycopg.Connection, batch_id: int, sample_dir: Path) -> None:
+def _normalize_manifest_row(table: str, row: dict[str, Any]) -> None:
+    """Приведение значений из внешних датасетов к ожиданиям DWH."""
+    if table == "stg.abs_clients_raw":
+        cid = row.get("source_client_id")
+        if cid is not None and cid != "":
+            row["source_client_id"] = str(cid).strip()
+        ct = row.get("client_type")
+        if ct:
+            u = str(ct).strip().upper()
+            row["client_type"] = "BUSINESS" if u == "BUSINESS" else "INDIVIDUAL"
+        if not row.get("status"):
+            row["status"] = "ACTIVE"
+    elif table == "stg.abs_transactions_raw":
+        for k in ("source_transaction_id", "source_client_id", "source_account_id"):
+            v = row.get(k)
+            if v is not None and str(v).strip() != "":
+                row[k] = str(v).strip()
+        if not row.get("channel_code"):
+            row["channel_code"] = "ONLINE"
+        if not row.get("currency_code"):
+            row["currency_code"] = "INR"
+        if not row.get("direction"):
+            row["direction"] = "D"
+        if not row.get("status"):
+            row["status"] = "POSTED"
+
+
+def _insert_stg_rows(
+    cur: psycopg.Cursor,
+    batch_id: int,
+    table: str,
+    columns: tuple[str, ...],
+    rows: list[dict[str, Any]],
+) -> None:
+    col_list = ", ".join(["batch_id", *columns])
+    placeholders = ", ".join(["%s"] * (1 + len(columns)))
+    sql = f"INSERT INTO {table} ({col_list}) VALUES ({placeholders})"
+    for r in rows:
+        values: list[Any] = [batch_id]
+        for c in columns:
+            v = r.get(c)
+            values.append(v if v != "" else None)
+        cur.execute(sql, values)
+
+
+def _load_manifest_extra(
+    cur: psycopg.Cursor,
+    batch_id: int,
+    manifest_dir: Path,
+) -> None:
+    man_path = manifest_dir / "manifest.json"
+    if not man_path.is_file():
+        return
+    doc = json.loads(man_path.read_text(encoding="utf-8"))
+    base = manifest_dir.resolve()
+    for spec in doc.get("additional_loaders", []):
+        rel = spec.get("file")
+        table = spec.get("table")
+        cols = spec.get("columns")
+        if not rel or not table or not cols:
+            continue
+        columns = tuple(str(c) for c in cols)
+        path = (manifest_dir / rel).resolve()
+        try:
+            path.relative_to(base)
+        except ValueError:
+            continue
+        if not path.is_file():
+            continue
+        raw_rows = _read_csv(path)
+        if not raw_rows:
+            continue
+        cmap = spec.get("column_map")
+        if cmap:
+            norm: list[dict[str, Any]] = []
+            for r in raw_rows:
+                row_out: dict[str, Any] = {c: None for c in columns}
+                for csv_header, stg_col in cmap.items():
+                    if stg_col not in row_out:
+                        continue
+                    v = r.get(csv_header)
+                    row_out[stg_col] = v if v not in ("", None) else None
+                _normalize_manifest_row(table, row_out)
+                norm.append(row_out)
+            _insert_stg_rows(cur, batch_id, table, columns, norm)
+        else:
+            for r in raw_rows:
+                _normalize_manifest_row(table, r)
+            _insert_stg_rows(cur, batch_id, table, columns, raw_rows)
+
+
+def load_all_csv(
+    conn: psycopg.Connection,
+    batch_id: int,
+    data_roots: list[Path],
+    manifest_dir: Path | None = None,
+) -> None:
     loaders: list[tuple[str, str, tuple[str, ...]]] = [
         ("abs_clients.csv", "stg.abs_clients_raw", (
             "source_client_id", "client_type", "first_name", "last_name", "middle_name",
@@ -67,19 +179,16 @@ def load_all_csv(conn: psycopg.Connection, batch_id: int, sample_dir: Path) -> N
 
     with conn.cursor() as cur:
         for filename, table, columns in loaders:
-            path = sample_dir / filename
-            rows = _read_csv(path)
-            if not rows:
-                continue
-            col_list = ", ".join(["batch_id", *columns])
-            placeholders = ", ".join(["%s"] * (1 + len(columns)))
-            sql = f"INSERT INTO {table} ({col_list}) VALUES ({placeholders})"
-            for r in rows:
-                values: list[Any] = [batch_id]
-                for c in columns:
-                    v = r.get(c)
-                    values.append(v if v != "" else None)
-                cur.execute(sql, values)
+            merged: list[dict[str, Any]] = []
+            for root in data_roots:
+                p = root / filename
+                if p.is_file():
+                    merged.extend(_read_csv(p))
+            if merged:
+                _insert_stg_rows(cur, batch_id, table, columns, merged)
+
+        if manifest_dir and manifest_dir.is_dir():
+            _load_manifest_extra(cur, batch_id, manifest_dir)
 
 
 ABS_SOURCE_ID = 1
@@ -802,6 +911,10 @@ def run_load_sources_to_staging(context: dict[str, Any]) -> int:
     conf = dag_conf(context)
     reset = bool(conf.get("reset", False))
     sample_dir = sample_data_dir(_DAGS_DIR)
+    ds_dir = datasets_data_dir(_DAGS_DIR)
+    roots = [sample_dir]
+    if ds_dir.is_dir():
+        roots.append(ds_dir)
     url = database_url()
     with psycopg.connect(url, autocommit=False) as conn:
         if reset:
@@ -812,13 +925,13 @@ def run_load_sources_to_staging(context: dict[str, Any]) -> int:
             cur.execute(
                 """
                 INSERT INTO stg.load_batch (source_system_code, status, notes)
-                VALUES ('SAMPLE_CSV', 'RUNNING', 'Демо-данные из data/sample')
+                VALUES ('SAMPLE_CSV', 'RUNNING', 'CSV: data/sample + data/datasets')
                 RETURNING batch_id
                 """
             )
             batch_id = int(cur.fetchone()[0])
 
-        load_all_csv(conn, batch_id, sample_dir)
+        load_all_csv(conn, batch_id, roots, manifest_dir=ds_dir if ds_dir.is_dir() else None)
 
         with conn.cursor() as cur:
             cur.execute(

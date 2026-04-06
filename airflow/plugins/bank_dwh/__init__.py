@@ -2,7 +2,7 @@
 
 from bank_dwh.airflow_utils import activity_date_range, dag_conf, report_date_for_dag
 from bank_dwh.clickhouse_client import ch_client, ch_database
-from bank_dwh.env import database_url, sample_data_dir
+from bank_dwh.env import database_url, datasets_data_dir, sample_data_dir
 
 __all__ = [
     "activity_date_range",
@@ -10,6 +10,7 @@ __all__ = [
     "ch_database",
     "dag_conf",
     "database_url",
+    "datasets_data_dir",
     "report_date_for_dag",
     "sample_data_dir",
 ]

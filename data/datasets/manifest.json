@@ -1,0 +1,57 @@
+{
+  "additional_loaders": [
+    {
+      "file": "Banking and Customer Transaction Data/customer_data.csv",
+      "table": "stg.abs_clients_raw",
+      "columns": [
+        "source_client_id",
+        "client_type",
+        "first_name",
+        "last_name",
+        "middle_name",
+        "birth_date",
+        "registration_date",
+        "tax_id",
+        "phone",
+        "email",
+        "region_code",
+        "status"
+      ],
+      "column_map": {
+        "Customer_ID": "source_client_id",
+        "Customer_Type": "client_type",
+        "City": "first_name",
+        "Region": "region_code",
+        "Bank_Name": "last_name"
+      }
+    },
+    {
+      "file": "Banking and Customer Transaction Data/transaction_data.csv",
+      "table": "stg.abs_transactions_raw",
+      "columns": [
+        "source_transaction_id",
+        "source_client_id",
+        "source_account_id",
+        "source_product_id",
+        "channel_code",
+        "operation_type_code",
+        "operation_ts",
+        "amount",
+        "currency_code",
+        "direction",
+        "status",
+        "merchant_name",
+        "description"
+      ],
+      "column_map": {
+        "Transaction_ID": "source_transaction_id",
+        "Customer_ID": "source_client_id",
+        "Account_Type": "source_account_id",
+        "Transaction_Amount": "amount",
+        "Transaction_Date": "operation_ts",
+        "Investment_Type": "operation_type_code",
+        "Total_Balance": "description"
+      }
+    }
+  ]
+}

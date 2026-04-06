@@ -5,7 +5,8 @@ USER root
 COPY airflow/dags /opt/airflow/dags
 COPY airflow/plugins /opt/airflow/plugins
 COPY data/sample /opt/airflow/data/sample
-RUN mkdir -p /opt/airflow/logs && chown -R airflow:root /opt/airflow/dags /opt/airflow/plugins /opt/airflow/data /opt/airflow/logs
+COPY data/datasets /opt/airflow/data/datasets
+RUN mkdir -p /opt/airflow/logs && chown -R airflow:root /opt/airflow/dags /opt/airflow/plugins /opt/airflow/data /opt/airflow/logs /opt/airflow/data/datasets
 
 USER airflow
 RUN pip install --no-cache-dir \

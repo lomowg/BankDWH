@@ -13,13 +13,14 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
-    DATABASE_URL: postgresql://${POSTGRES_USER:-dwh}:${POSTGRES_PASSWORD:-dwh_secret}@postgres:5432/${POSTGRES_DB:-bank_dwh}
+    DATABASE_URL: postgresql://${POSTGRES_USER:-dwh}:${POSTGRES_PASSWORD:-dwh_secret}@postgres:5432/${POSTGRES_DB:-bank_dwh}?client_encoding=utf8
     POSTGRES_HOST: postgres
     POSTGRES_PORT: "5432"
     POSTGRES_USER: ${POSTGRES_USER:-dwh}
     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dwh_secret}
     POSTGRES_DB: ${POSTGRES_DB:-bank_dwh}
     ETL_SAMPLE_DATA_DIR: /opt/airflow/data/sample
+    ETL_DATASETS_DIR: /opt/airflow/data/datasets
     CLICKHOUSE_HOST: clickhouse
     CLICKHOUSE_HTTP_PORT: "8123"
     CLICKHOUSE_DATABASE: bank_marts
@@ -62,6 +63,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-dwh}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dwh_secret}
       POSTGRES_DB: ${POSTGRES_DB:-bank_dwh}
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C.UTF-8"
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
