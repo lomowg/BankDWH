@@ -43,3 +43,12 @@ kubectl port-forward -n bank-dwh svc/analytics-api 8000:8000
 - Grafana: http://localhost:3000 — пользователь `admin`, пароль: ключ `grafana-admin-password` в том же файле.
 - Analytics API: http://localhost:8000/docs
 
+
+**Выключить**
+
+```powershell
+kubectl scale deploy --all --replicas=0 -n bank-dwh
+kubectl scale statefulset --all --replicas=0 -n bank-dwh
+```
+
+Включить обратно — снова replicas=1 (или как было в YAML) для каждого ресурса / kubectl apply -f k8s/manifests/....

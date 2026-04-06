@@ -1,0 +1,87 @@
+# Проверка манифестов Kubernetes, сборка Docker-образов, синтаксис Python.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kubeconform:
+    name: Kubernetes manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubeconform
+        run: |
+          set -euo pipefail
+          ver=0.6.7
+          curl -sSL "https://github.com/yannh/kubeconform/releases/download/v${ver}/kubeconform-linux-amd64.tar.gz" | tar xz
+          sudo mv kubeconform /usr/local/bin/
+
+      - name: Validate YAML
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(find k8s/manifests -name '*.yaml' -type f | sort)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No manifests under k8s/manifests"
+            exit 1
+          fi
+          kubeconform -summary -strict -kubernetes-version 1.30.0 "${files[@]}"
+
+  docker-build:
+    name: Docker images (build only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build Airflow (K8s)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.airflow.k8s
+          push: false
+          tags: bank_dwh_airflow:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Analytics API
+        uses: docker/build-push-action@v6
+        with:
+          context: ./analytics_api
+          file: ./analytics_api/Dockerfile
+          push: false
+          tags: bank_dwh_analytics_api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  python:
+    name: Python (analytics + DAGs + plugins)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: analytics_api/requirements.txt
+
+      - name: Install analytics_api deps
+        run: pip install -r analytics_api/requirements.txt
+
+      - name: Byte-compile
+        run: |
+          python -m compileall -q analytics_api airflow/dags airflow/plugins
