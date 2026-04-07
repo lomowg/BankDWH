@@ -19,8 +19,20 @@ if (-not $?) {
 kubectl apply --validate=false -f "$PSScriptRoot/manifests/namespace.yaml"
 kubectl apply --validate=false -f "$PSScriptRoot/manifests/secrets.yaml"
 
-kubectl create configmap postgres-init-sql -n $ns --from-file="sql/postgresql/init/" --dry-run=client -o yaml | kubectl apply --validate=false -f -
-kubectl create configmap clickhouse-init-sql -n $ns --from-file="sql/clickhouse/init/" --dry-run=client -o yaml | kubectl apply --validate=false -f -
+function New-FlatSqlConfigMap {
+    param([string]$Name, [string]$Dir)
+    $rootDir = Join-Path $Root $Dir
+    $fromArgs = @()
+    Get-ChildItem -Path $rootDir -File -Recurse | ForEach-Object {
+        $rel = $_.FullName.Substring($rootDir.Length + 1).Replace('\', '/')
+        $key = $rel.Replace('/', '__')
+        $fromArgs += "--from-file=$key=$($_.FullName)"
+    }
+    & kubectl create configmap $Name -n $ns @fromArgs --dry-run=client -o yaml | kubectl apply --validate=false -f -
+}
+
+New-FlatSqlConfigMap postgres-init-sql sql/postgresql
+New-FlatSqlConfigMap clickhouse-init-sql sql/clickhouse
 kubectl create configmap prometheus-config -n $ns --from-file="prometheus.yml=monitoring/prometheus/prometheus.yml" --dry-run=client -o yaml | kubectl apply --validate=false -f -
 kubectl create configmap blackbox-config -n $ns --from-file="blackbox.yml=monitoring/blackbox/blackbox.yml" --dry-run=client -o yaml | kubectl apply --validate=false -f -
 kubectl create configmap grafana-datasources -n $ns --from-file="monitoring/grafana/provisioning/datasources/" --dry-run=client -o yaml | kubectl apply --validate=false -f -

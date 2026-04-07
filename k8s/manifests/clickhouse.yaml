@@ -35,6 +35,31 @@ spec:
       labels:
         app: clickhouse
     spec:
+      initContainers:
+        - name: layout-init-sql
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              mkdir -p /out
+              for f in /raw/*; do
+                [ -f "$f" ] || continue
+                k=$(basename "$f")
+                case "$k" in
+                  run-init.sh) dest="$k" ;;
+                  *) dest=$(echo "$k" | sed 's|__|/|g') ;;
+                esac
+                mkdir -p "/out/$(dirname "$dest")"
+                cp "$f" "/out/$dest"
+              done
+          volumeMounts:
+            - name: init-sql-raw
+              mountPath: /raw
+              readOnly: true
+            - name: init-sql-work
+              mountPath: /out
       containers:
         - name: clickhouse
           image: clickhouse/clickhouse-server:24.8-alpine
@@ -56,7 +81,7 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/clickhouse
-            - name: init-sql
+            - name: init-sql-work
               mountPath: /docker-entrypoint-initdb.d
               readOnly: true
           readinessProbe:
@@ -79,9 +104,11 @@ spec:
               cpu: "2"
               memory: "2Gi"
       volumes:
-        - name: init-sql
+        - name: init-sql-raw
           configMap:
             name: clickhouse-init-sql
+        - name: init-sql-work
+          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: data

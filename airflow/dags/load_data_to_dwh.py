@@ -248,7 +248,6 @@ def transform_batch(conn: psycopg.Connection, batch_id: int) -> None:
     alloc_event = IdAllocator(conn)
     alloc_appeal = IdAllocator(conn)
     alloc_hist = IdAllocator(conn)
-    alloc_seg = IdAllocator(conn)
 
     start_client = alloc_client.next("SELECT COALESCE(MAX(client_id), 0) FROM dwh.clients")
     start_account = alloc_account.next("SELECT COALESCE(MAX(account_id), 0) FROM dwh.accounts")
@@ -257,7 +256,6 @@ def transform_batch(conn: psycopg.Connection, batch_id: int) -> None:
     start_event = alloc_event.next("SELECT COALESCE(MAX(digital_event_id), 0) FROM dwh.digital_events")
     start_appeal = alloc_appeal.next("SELECT COALESCE(MAX(appeal_id), 0) FROM dwh.appeals")
     start_hist = alloc_hist.next("SELECT COALESCE(MAX(client_history_id), 0) FROM dwh.client_history")
-    start_seg = alloc_seg.next("SELECT COALESCE(MAX(segment_history_id), 0) FROM dwh.client_segments_history")
 
     with conn.cursor() as cur:
         cur.execute(
@@ -781,23 +779,110 @@ def transform_batch(conn: psycopg.Connection, batch_id: int) -> None:
             )
             apid += 1
 
-        cur.execute(
-            "DELETE FROM dwh.client_segments_history WHERE assigned_by = %s",
-            ("ETL_DEMO",),
-        )
-        seg_id = start_seg - 1
-        cur.execute("SELECT client_id FROM dwh.clients ORDER BY client_id")
-        for (client_id,) in cur.fetchall():
-            seg_id += 1
-            cur.execute(
-                """
-                INSERT INTO dwh.client_segments_history (
-                    segment_history_id, client_id, segment_type_id, score, effective_from, effective_to,
-                    is_current, assigned_by
-                ) VALUES (%s, %s, %s, NULL, %s, NULL, true, 'ETL_DEMO')
-                """,
-                (seg_id, client_id, 1, date.today()),
-            )
+def recompute_client_segments(conn: psycopg.Connection, report_date: date) -> None:
+    """
+    NEW - дата регистрации/создания клиента в пределах 90 дней до отчёта.
+    DORMANT - не новый и нет операций/событий 180+ дней (последняя активность по max(транзакция, ДБО)).
+    HIGH_VALUE - высокая активность или портфель: оборот 30д >= 250k, или >= 12 операций, или >= 4 активных продукта.
+    ACTIVE - умеренная активность 30д: >= 3 операций, или >= 6 цифровых событий, или оборот >= 15k.
+    LOW_ACTIVITY - остальные клиенты
+    """
+    delete_sql = "DELETE FROM dwh.client_segments_history WHERE assigned_by = 'ETL_SEGMENTATION'"
+    insert_sql = """
+    WITH tx30 AS (
+        SELECT
+            client_id,
+            COUNT(*)::int AS op_30,
+            COALESCE(SUM(CASE WHEN direction = 'D' THEN amount ELSE 0 END), 0) AS debit_30,
+            COALESCE(SUM(CASE WHEN direction = 'C' THEN amount ELSE 0 END), 0) AS credit_30
+        FROM dwh.transactions
+        WHERE operation_date >= %(rd)s::date - INTERVAL '30 days'
+          AND operation_date <= %(rd)s::date
+        GROUP BY client_id
+    ),
+    last_any AS (
+        SELECT client_id, MAX(operation_ts) AS last_tx_ts
+        FROM dwh.transactions
+        GROUP BY client_id
+    ),
+    last_dig AS (
+        SELECT client_id, MAX(event_ts) AS last_ev_ts
+        FROM dwh.digital_events
+        GROUP BY client_id
+    ),
+    de30 AS (
+        SELECT client_id, COUNT(*)::int AS ev_30
+        FROM dwh.digital_events
+        WHERE event_date >= %(rd)s::date - INTERVAL '30 days'
+          AND event_date <= %(rd)s::date
+        GROUP BY client_id
+    ),
+    prod_cnt AS (
+        SELECT client_id, COUNT(*)::int AS active_products
+        FROM dwh.products
+        WHERE status = 'ACTIVE'
+        GROUP BY client_id
+    ),
+    metrics AS (
+        SELECT
+            c.client_id,
+            COALESCE(c.registration_date, (c.created_at AT TIME ZONE 'UTC')::date) AS anchor_date,
+            COALESCE(t.op_30, 0) AS op_30,
+            COALESCE(t.debit_30, 0) + COALESCE(t.credit_30, 0) AS turnover_30,
+            la.last_tx_ts,
+            ld.last_ev_ts,
+            COALESCE(d.ev_30, 0) AS ev_30,
+            COALESCE(pc.active_products, 0) AS active_products
+        FROM dwh.clients c
+        LEFT JOIN tx30 t ON t.client_id = c.client_id
+        LEFT JOIN last_any la ON la.client_id = c.client_id
+        LEFT JOIN last_dig ld ON ld.client_id = c.client_id
+        LEFT JOIN de30 d ON d.client_id = c.client_id
+        LEFT JOIN prod_cnt pc ON pc.client_id = c.client_id
+    ),
+    classified AS (
+        SELECT
+            client_id,
+            CASE
+                WHEN anchor_date >= %(rd)s::date - INTERVAL '90 days' THEN 3::smallint
+                WHEN anchor_date < %(rd)s::date - INTERVAL '90 days'
+                    AND (
+                        (last_tx_ts IS NULL AND last_ev_ts IS NULL)
+                        OR GREATEST(
+                            COALESCE((last_tx_ts AT TIME ZONE 'UTC')::date, DATE '1970-01-01'),
+                            COALESCE((last_ev_ts AT TIME ZONE 'UTC')::date, DATE '1970-01-01')
+                        ) < %(rd)s::date - INTERVAL '180 days'
+                    )
+                    THEN 4::smallint
+                WHEN turnover_30 >= 250000 OR op_30 >= 12 OR active_products >= 4 THEN 5::smallint
+                WHEN op_30 >= 3 OR ev_30 >= 6 OR turnover_30 >= 15000 THEN 1::smallint
+                ELSE 2::smallint
+            END AS segment_type_id
+        FROM metrics
+    ),
+    mx AS (
+        SELECT COALESCE(MAX(segment_history_id), 0) AS base_id
+        FROM dwh.client_segments_history
+    )
+    INSERT INTO dwh.client_segments_history (
+        segment_history_id, client_id, segment_type_id, score, effective_from, effective_to,
+        is_current, assigned_by
+    )
+    SELECT
+        mx.base_id + ROW_NUMBER() OVER (ORDER BY classified.client_id),
+        classified.client_id,
+        classified.segment_type_id,
+        NULL::numeric,
+        %(rd)s::date,
+        NULL::date,
+        true,
+        'ETL_SEGMENTATION'
+    FROM classified
+    CROSS JOIN mx;
+    """
+    with conn.cursor() as cur:
+        cur.execute(delete_sql)
+        cur.execute(insert_sql, {"rd": report_date})
 
 
 def refresh_profile_export(conn: psycopg.Connection, report_date: date | None = None) -> None:
@@ -960,6 +1045,7 @@ def run_refresh_client_profile_export(context: dict[str, Any]) -> None:
     report_dt = report_date_for_dag(context, conf)
     url = database_url()
     with psycopg.connect(url, autocommit=False) as conn:
+        recompute_client_segments(conn, report_dt)
         refresh_profile_export(conn, report_date=report_dt)
         conn.commit()
 

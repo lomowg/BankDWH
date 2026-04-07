@@ -13,9 +13,38 @@ _MAX_LIMIT = 2000
 _DEFAULT_LIMIT = 200
 _MAX_RANGE_DAYS = 400
 
+# Подписи сегментов в API (UTF-8) — не зависят от кодировки данных в ClickHouse
+_SEGMENT_LABELS: dict[int, tuple[str, str]] = {
+    0: ("UNKNOWN", "Не задан"),
+    1: ("ACTIVE", "Активные клиенты (регулярно используют банковские услуги)"),
+    2: ("LOW_ACTIVITY", "Малоактивные клиенты (редко используют услуги)"),
+    3: ("NEW", "Новые клиенты"),
+    4: ("DORMANT", "Неактивные клиенты (нет операций длительное время)"),
+    5: ("HIGH_VALUE", "Потенциально ценные клиенты"),
+}
+
+
+def _row_segment_labels(row: dict[str, Any]) -> dict[str, Any]:
+    raw = row.get("current_segment_type_id")
+    sid = 0 if raw is None else int(raw)
+    code, name = _SEGMENT_LABELS.get(sid, ("UNKNOWN", "Не задан"))
+    row["segment_type_code"] = code
+    row["segment_type_name"] = name
+    return row
+
 
 def _clamp_limit(limit: int) -> int:
     return max(1, min(limit, _MAX_LIMIT))
+
+
+def _safe_fetch(sql: str, parameters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    try:
+        return fetch_all(sql, parameters)
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"ClickHouse: {e!s}",
+        ) from e
 
 
 @router.get("/client-profile", summary="Витрина профиля клиента (mart_client_profile)")
@@ -43,7 +72,7 @@ def client_profile(
             ORDER BY client_id
             LIMIT {{lim:UInt32}} OFFSET {{off:UInt32}}
         """
-        return fetch_all(sql, params)
+        return _safe_fetch(sql, params)
     extra2 = " AND client_id = {cid:UInt64}" if client_id is not None else ""
     params2: dict[str, Any] = {"lim": lim, "off": offset}
     if client_id is not None:
@@ -61,7 +90,7 @@ def client_profile(
         ORDER BY client_id
         LIMIT {{lim:UInt32}} OFFSET {{off:UInt32}}
     """
-    return fetch_all(sql, params2)
+    return _safe_fetch(sql, params2)
 
 
 @router.get("/client-profile/{client_id}", summary="Профиль одного клиента (последняя отчётная дата)")
@@ -70,7 +99,7 @@ def client_profile_one(
     report_date: date | None = Query(None),
 ) -> dict[str, Any]:
     if report_date is not None:
-        rows = fetch_all(
+        rows = _safe_fetch(
             """
             SELECT
                 report_date, client_id, unified_client_key, client_type, status, region_code,
@@ -85,7 +114,7 @@ def client_profile_one(
             {"cid": client_id, "rd": report_date},
         )
     else:
-        rows = fetch_all(
+        rows = _safe_fetch(
             """
             SELECT
                 report_date, client_id, unified_client_key, client_type, status, region_code,
@@ -105,12 +134,69 @@ def client_profile_one(
     return rows[0]
 
 
+@router.get("/client-segmentation", summary="Витрина сегментации клиентов (подписи сегментов из API, UTF-8)")
+def client_segmentation(
+    report_date: date | None = Query(None, description="Отчётная дата; если не задана — max(report_date)"),
+    client_id: int | None = Query(None, ge=1),
+    limit: int = Query(_DEFAULT_LIMIT, ge=1, le=_MAX_LIMIT),
+    offset: int = Query(0, ge=0),
+) -> list[dict[str, Any]]:
+    lim = _clamp_limit(limit)
+    base = """
+        SELECT
+            p.report_date AS report_date,
+            p.client_id AS client_id,
+            p.unified_client_key AS unified_client_key,
+            p.client_type AS client_type,
+            p.status AS status,
+            p.region_code AS region_code,
+            p.active_accounts_cnt AS active_accounts_cnt,
+            p.active_products_cnt AS active_products_cnt,
+            p.debit_turnover_30d AS debit_turnover_30d,
+            p.credit_turnover_30d AS credit_turnover_30d,
+            p.operations_cnt_30d AS operations_cnt_30d,
+            p.digital_events_cnt_30d AS digital_events_cnt_30d,
+            p.appeals_cnt_90d AS appeals_cnt_90d,
+            p.last_transaction_ts AS last_transaction_ts,
+            p.last_digital_event_ts AS last_digital_event_ts,
+            p.current_segment_type_id AS current_segment_type_id,
+            p.loaded_at AS loaded_at
+        FROM mart_client_profile AS p
+    """
+    if report_date is not None:
+        params: dict[str, Any] = {"rd": report_date, "lim": lim, "off": offset}
+        extra = " AND p.client_id = {cid:UInt64}" if client_id is not None else ""
+        if client_id is not None:
+            params["cid"] = client_id
+        sql = f"""
+            {base}
+            WHERE p.report_date = {{rd:Date}}{extra}
+            ORDER BY p.client_id
+            LIMIT {{lim:UInt32}} OFFSET {{off:UInt32}}
+        """
+        rows = _safe_fetch(sql, params)
+    else:
+        extra2 = " AND p.client_id = {cid:UInt64}" if client_id is not None else ""
+        params2: dict[str, Any] = {"lim": lim, "off": offset}
+        if client_id is not None:
+            params2["cid"] = client_id
+        sql = f"""
+            {base}
+            WHERE p.report_date = (SELECT max(report_date) FROM mart_client_profile)
+            {extra2}
+            ORDER BY p.client_id
+            LIMIT {{lim:UInt32}} OFFSET {{off:UInt32}}
+        """
+        rows = _safe_fetch(sql, params2)
+    return [_row_segment_labels(dict(r)) for r in rows]
+
+
 @router.get("/segment-metrics", summary="Метрики по сегментам (mart_segment_metrics)")
 def segment_metrics(
     report_date: date | None = Query(None),
 ) -> list[dict[str, Any]]:
     if report_date is not None:
-        return fetch_all(
+        return _safe_fetch(
             """
             SELECT
                 report_date, segment_type_id, clients_cnt, active_clients_30d,
@@ -122,7 +208,7 @@ def segment_metrics(
             """,
             {"rd": report_date},
         )
-    return fetch_all(
+    return _safe_fetch(
         """
         SELECT
             report_date, segment_type_id, clients_cnt, active_clients_30d,
@@ -160,7 +246,7 @@ def client_activity_daily(
         ORDER BY activity_date, client_id, channel_code
         LIMIT {{lim:UInt32}} OFFSET {{off:UInt32}}
     """
-    return fetch_all(sql, params)
+    return _safe_fetch(sql, params)
 
 
 @router.get("/financial-activity-daily", summary="Финансовая активность по типу операции (mart_financial_activity_daily)")
@@ -187,7 +273,7 @@ def financial_activity_daily(
         ORDER BY activity_date, client_id, channel_code, operation_type_code
         LIMIT {{lim:UInt32}} OFFSET {{off:UInt32}}
     """
-    return fetch_all(sql, params)
+    return _safe_fetch(sql, params)
 
 
 @router.get("/digital-activity-daily", summary="Цифровая активность по типу события (mart_digital_activity_daily)")
@@ -214,4 +300,4 @@ def digital_activity_daily(
         ORDER BY activity_date, client_id, channel_code, event_type_code
         LIMIT {{lim:UInt32}} OFFSET {{off:UInt32}}
     """
-    return fetch_all(sql, params)
+    return _safe_fetch(sql, params)

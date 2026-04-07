@@ -18,8 +18,26 @@ fi
 kubectl apply --validate=false -f k8s/manifests/namespace.yaml
 kubectl apply --validate=false -f k8s/manifests/secrets.yaml
 
-kubectl create configmap postgres-init-sql -n "$NS" --from-file=sql/postgresql/init/ --dry-run=client -o yaml | kubectl apply --validate=false -f -
-kubectl create configmap clickhouse-init-sql -n "$NS" --from-file=sql/clickhouse/init/ --dry-run=client -o yaml | kubectl apply --validate=false -f -
+
+create_flat_sql_configmap() {
+  local name="$1"
+  local dir="$2"
+  local args=()
+  while IFS= read -r -d '' line; do
+    args+=( "$line" )
+  done < <(
+    cd "$ROOT/$dir" || exit 1
+    while IFS= read -r -d '' f; do
+      rel="${f#./}"
+      key="${rel//\//__}"
+      printf '%s\0' "--from-file=${key}=${PWD}/${rel}"
+    done < <(find . -type f -print0)
+  )
+  kubectl create configmap "$name" -n "$NS" "${args[@]}" --dry-run=client -o yaml | kubectl apply --validate=false -f -
+}
+
+create_flat_sql_configmap postgres-init-sql sql/postgresql
+create_flat_sql_configmap clickhouse-init-sql sql/clickhouse
 kubectl create configmap prometheus-config -n "$NS" --from-file=prometheus.yml=monitoring/prometheus/prometheus.yml --dry-run=client -o yaml | kubectl apply --validate=false -f -
 kubectl create configmap blackbox-config -n "$NS" --from-file=blackbox.yml=monitoring/blackbox/blackbox.yml --dry-run=client -o yaml | kubectl apply --validate=false -f -
 kubectl create configmap grafana-datasources -n "$NS" --from-file=monitoring/grafana/provisioning/datasources/ --dry-run=client -o yaml | kubectl apply --validate=false -f -
