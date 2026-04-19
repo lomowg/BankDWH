@@ -13,7 +13,6 @@ _MAX_LIMIT = 2000
 _DEFAULT_LIMIT = 200
 _MAX_RANGE_DAYS = 400
 
-# Подписи сегментов в API (UTF-8) — не зависят от кодировки данных в ClickHouse
 _SEGMENT_LABELS: dict[int, tuple[str, str]] = {
     0: ("UNKNOWN", "Не задан"),
     1: ("ACTIVE", "Активные клиенты (регулярно используют банковские услуги)"),
@@ -134,7 +133,7 @@ def client_profile_one(
     return rows[0]
 
 
-@router.get("/client-segmentation", summary="Витрина сегментации клиентов (подписи сегментов из API, UTF-8)")
+@router.get("/client-segmentation", summary="Витрина сегментации клиентов")
 def client_segmentation(
     report_date: date | None = Query(None, description="Отчётная дата; если не задана — max(report_date)"),
     client_id: int | None = Query(None, ge=1),
