@@ -3,5 +3,19 @@ INSERT INTO dwh.operation_types (operation_type_id, operation_type_code, operati
     (2, 'TRANSFER', 'Перевод'),
     (3, 'CASH_IN', 'Пополнение'),
     (4, 'CASH_OUT', 'Снятие'),
-    (5, 'POS', 'Оплата картой')
+    (5, 'POS', 'Оплата картой'),
+    (6, 'SALARY', 'Зарплата / зачисление'),
+    (7, 'CARD_PAYMENT', 'Платёж картой'),
+    (8, 'TRANSFER_IN', 'Входящий перевод'),
+    (9, 'TRANSFER_OUT', 'Исходящий перевод'),
+    (10, 'LOAN_PAYMENT', 'Погашение кредита'),
+    (11, 'CASH_WITHDRAWAL', 'Снятие наличных'),
+    (12, 'FEE', 'Комиссия'),
+    (13, 'INTEREST', 'Проценты'),
+    (14, 'DEPOSIT_TOPUP', 'Пополнение депозита'),
+    (15, 'RCDT', 'Банк.код: списание'),
+    (16, 'PMNT', 'Банк.код: платёж'),
+    (17, 'CCRD', 'Банк.код: карта'),
+    (18, 'CAMT_STMT', 'ISO 20022: проводка выписки'),
+    (19, 'CAMT_NTF', 'ISO 20022: кредитовое уведомление')
 ON CONFLICT (operation_type_id) DO NOTHING;

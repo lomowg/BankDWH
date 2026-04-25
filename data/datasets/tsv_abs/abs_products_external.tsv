@@ -1,0 +1,11 @@
+product_id	product_name	product_group	description	interest_rate	credit_limit	active_flag	source_system
+101	Debit card	CARD	Mass debit card	0.0	0.0	Y	ABS_PRODUCT_CATALOG
+102	Credit card classic	CARD	Revolving credit card	18.9	50000.0	Y	ABS_PRODUCT_CATALOG
+103	Savings account	ACCOUNT	Retail savings account	3.5	0.0	Y	ABS_PRODUCT_CATALOG
+104	Current account	ACCOUNT	Current account for active payments	0.0	0.0	Y	ABS_PRODUCT_CATALOG
+105	Business account	ACCOUNT	SME settlement account	0.0	0.0	Y	ABS_PRODUCT_CATALOG
+106	Fixed deposit 12M	DEPOSIT	Term deposit for 12 months	6.75	0.0	Y	ABS_PRODUCT_CATALOG
+107	Personal loan	LOAN	Unsecured personal loan	13.5	300000.0	Y	ABS_PRODUCT_CATALOG
+108	Mortgage	LOAN	Secured housing loan	9.2	10000000.0	Y	ABS_PRODUCT_CATALOG
+109	Mobile banking	DIGITAL	Remote banking service	0.0	0.0	Y	ABS_PRODUCT_CATALOG
+110	Investment account	INVESTMENT	Retail investment account	0.0	0.0	Y	ABS_PRODUCT_CATALOG

@@ -1,10 +1,9 @@
 """
-Синхронизация источников (CSV) -> PostgreSQL: stg -> dwh -> client_profile_export.
-
 Источники:
-  - data/sample (или ETL_SAMPLE_DATA_DIR)
-  - data/datasets/ (или ETL_DATASETS_DIR)
-  - data/datasets/manifest.json — additional_loaders для внешних CSV и column_map
+  - data/sample — CSV
+  - data/datasets/ — sample CSV, manifest.json, tsv_abs/, json_api/,
+  - logs/dbo_events.jsonl, xml_iso20022/, xlsx_crm/
+  - manifest.json: additional_loaders (format csv/tsv, column_map)
 
 Параметры:
   {"reset": true} - очистка таблиц (TRUNCATE stg/dwh фактов)
@@ -16,6 +15,8 @@ from __future__ import annotations
 import csv
 import io
 import json
+import re
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal
@@ -49,6 +50,23 @@ def _read_csv(path: Path) -> list[dict[str, Any]]:
     return list(csv.DictReader(io.StringIO(text, newline="")))
 
 
+def _read_text_any(path: Path) -> str:
+    raw = path.read_bytes()
+    if raw.startswith(b"\xff\xfe"):
+        return raw.decode("utf-16-le")
+    if raw.startswith(b"\xfe\xff"):
+        return raw.decode("utf-16-be")
+    try:
+        return raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return raw.decode("cp1251")
+
+
+def _read_delimited(path: Path, delimiter: str) -> list[dict[str, Any]]:
+    text = _read_text_any(path)
+    return list(csv.DictReader(io.StringIO(text, newline=""), delimiter=delimiter))
+
+
 def _normalize_manifest_row(table: str, row: dict[str, Any]) -> None:
     """Приведение значений из внешних датасетов к ожиданиям DWH."""
     if table == "stg.abs_clients_raw":
@@ -58,7 +76,10 @@ def _normalize_manifest_row(table: str, row: dict[str, Any]) -> None:
         ct = row.get("client_type")
         if ct:
             u = str(ct).strip().upper()
-            row["client_type"] = "BUSINESS" if u == "BUSINESS" else "INDIVIDUAL"
+            if u in ("BUSINESS", "B2B", "B"):
+                row["client_type"] = "BUSINESS"
+            else:
+                row["client_type"] = "INDIVIDUAL"
         if not row.get("status"):
             row["status"] = "ACTIVE"
     elif table == "stg.abs_transactions_raw":
@@ -74,6 +95,27 @@ def _normalize_manifest_row(table: str, row: dict[str, Any]) -> None:
             row["direction"] = "D"
         if not row.get("status"):
             row["status"] = "POSTED"
+    elif table == "stg.abs_accounts_raw":
+        if not row.get("account_number_masked"):
+            aid = row.get("source_account_id")
+            if aid:
+                s = str(aid).strip()
+                row["account_number_masked"] = f"****{s[-4:]}" if len(s) >= 4 else f"****{s}"
+
+
+def _read_rows_for_manifest_file(
+    path: Path,
+    spec: dict[str, Any],
+) -> list[dict[str, Any]]:
+    fmt = (spec.get("format") or "csv").lower()
+    delimiter = str(spec.get("delimiter") or ",")
+    if fmt in ("tsv", "tab"):
+        return _read_delimited(path, "\t")
+    if fmt == "csv" and delimiter not in (",", ""):
+        return _read_delimited(path, delimiter)
+    if fmt == "csv":
+        return _read_csv(path)
+    raise ValueError(f"Unsupported manifest format: {fmt}")
 
 
 def _insert_stg_rows(
@@ -118,7 +160,10 @@ def _load_manifest_extra(
             continue
         if not path.is_file():
             continue
-        raw_rows = _read_csv(path)
+        try:
+            raw_rows = _read_rows_for_manifest_file(path, spec)
+        except ValueError:
+            continue
         if not raw_rows:
             continue
         cmap = spec.get("column_map")
@@ -138,6 +183,596 @@ def _load_manifest_extra(
             for r in raw_rows:
                 _normalize_manifest_row(table, r)
             _insert_stg_rows(cur, batch_id, table, columns, raw_rows)
+
+
+def _map_txn_channel_code(code: str | None) -> str:
+    if not code:
+        return "ONLINE"
+    c = str(code).strip().upper()
+    m = {
+        "MOBILE": "MB",
+        "API": "API",
+        "MOBILE_APP": "MB",
+    }
+    return m.get(c, c)
+
+
+def _load_tsv_abs_transactions(
+    cur: psycopg.Cursor, batch_id: int, path: Path,
+) -> None:
+    if not path.is_file():
+        return
+    rows: list[dict[str, Any]] = []
+    for r in _read_delimited(path, "\t"):
+        txid = (r.get("transaction_id") or "").strip()
+        if not txid:
+            continue
+        amt_s = (r.get("amount") or "").replace(",", ".").strip()
+        try:
+            val = float(amt_s)
+        except ValueError:
+            continue
+        if val < 0:
+            direction = "D"
+            amt_abs = str(abs(val))
+        else:
+            direction = "C"
+            amt_abs = str(val)
+        d = (r.get("transaction_date") or "")[:10].strip()
+        op_ts = f"{d}T12:00:00+00:00" if d else None
+        rows.append(
+            {
+                "source_transaction_id": txid,
+                "source_client_id": (r.get("client_id") or "").strip(),
+                "source_account_id": (r.get("account_id") or "").strip() or None,
+                "source_product_id": None,
+                "channel_code": _map_txn_channel_code(r.get("channel")),
+                "operation_type_code": (r.get("operation_type") or "").strip() or "PAYMENT",
+                "operation_ts": op_ts,
+                "amount": amt_abs,
+                "currency_code": (r.get("currency") or "INR").strip()[:8],
+                "direction": direction,
+                "status": "POSTED",
+                "merchant_name": (r.get("merchant_category") or "").strip() or None,
+                "description": (r.get("counterparty") or "").strip() or None,
+            },
+        )
+    if rows:
+        _insert_stg_rows(
+            cur,
+            batch_id,
+            "stg.abs_transactions_raw",
+            (
+                "source_transaction_id", "source_client_id", "source_account_id", "source_product_id",
+                "channel_code", "operation_type_code", "operation_ts", "amount", "currency_code",
+                "direction", "status", "merchant_name", "description",
+            ),
+            rows,
+        )
+
+
+def _load_tsv_product_catalog(
+    cur: psycopg.Cursor, batch_id: int, path: Path,
+) -> None:
+    if not path.is_file():
+        return
+    rows: list[dict[str, Any]] = []
+    for r in _read_delimited(path, "\t"):
+        pid = (r.get("product_id") or "").strip()
+        if not pid:
+            continue
+        rows.append(
+            {
+                "product_id": int(pid) if str(pid).isdigit() else 0,
+                "product_name": (r.get("product_name") or "").strip() or None,
+                "product_group": (r.get("product_group") or "").strip() or None,
+                "description": (r.get("description") or "").strip() or None,
+                "interest_rate": (r.get("interest_rate") or "").strip() or None,
+                "credit_limit": (r.get("credit_limit") or "").strip() or None,
+                "active_flag": (r.get("active_flag") or "").strip() or None,
+                "source_system": (r.get("source_system") or "").strip() or None,
+            },
+        )
+    if not rows:
+        return
+    _insert_stg_rows(
+        cur,
+        batch_id,
+        "stg.product_catalog_raw",
+        (
+            "product_id", "product_name", "product_group", "description", "interest_rate",
+            "credit_limit", "active_flag", "source_system",
+        ),
+        rows,
+    )
+
+
+def _load_dbo_jsonl(
+    cur: psycopg.Cursor, batch_id: int, path: Path,
+) -> None:
+    if not path.is_file():
+        return
+    rows: list[dict[str, Any]] = []
+    for line in _read_text_any(path).splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            o = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        payload = {k: v for k, v in o.items() if k in ("ip_country", "account_id", "source_system")}
+        rows.append(
+            {
+                "source_event_id": o.get("event_id"),
+                "source_client_id": o.get("customer_id"),
+                "channel_code": (o.get("channel") or "").strip(),
+                "event_type_code": (o.get("event_type") or "").strip(),
+                "event_ts": o.get("event_time"),
+                "device_type": (o.get("device_type") or "").strip() or None,
+                "platform": None,
+                "session_id": (o.get("session_id") or "").strip() or None,
+                "success_flag": "true" if o.get("success") else "false" if o.get("success") is not None else None,
+                "payload_json": json.dumps(payload, ensure_ascii=False) if payload else None,
+            },
+        )
+    if not rows:
+        return
+    _insert_stg_rows(
+        cur,
+        batch_id,
+        "stg.dbo_events_raw",
+        (
+            "source_event_id", "source_client_id", "channel_code", "event_type_code", "event_ts",
+            "device_type", "platform", "session_id", "success_flag", "payload_json",
+        ),
+        rows,
+    )
+
+
+def _load_open_banking_accounts(
+    cur: psycopg.Cursor, batch_id: int, path: Path,
+) -> None:
+    if not path.is_file():
+        return
+    try:
+        doc = json.loads(_read_text_any(path))
+    except json.JSONDecodeError:
+        return
+    accs = (doc.get("Data") or {}).get("Account") or []
+    if not accs:
+        return
+    rows: list[dict[str, Any]] = []
+    for a in accs:
+        st = (a.get("Status") or "").lower()
+        status = "ACTIVE" if st == "enabled" else (a.get("Status") or "ACTIVE").upper()
+        oa = a.get("StatusUpdateDateTime")
+        oad = (oa or "")[:10] if oa else None
+        at = f"{a.get('AccountType', '')} / {a.get('AccountSubType', '')}".strip(" /")
+        rows.append(
+            {
+                "source_account_id": a.get("AccountId"),
+                "source_client_id": a.get("CustomerId"),
+                "account_number_masked": (a.get("Nickname") or f"****{a.get('AccountId', '')}")[:64],
+                "account_type": (at or "ACCOUNT")[:50],
+                "currency_code": (a.get("Currency") or "INR")[:8],
+                "opened_at": oad,
+                "closed_at": None,
+                "status": status[:30],
+            },
+        )
+    if rows:
+        _insert_stg_rows(
+            cur,
+            batch_id,
+            "stg.abs_accounts_raw",
+            (
+                "source_account_id", "source_client_id", "account_number_masked", "account_type",
+                "currency_code", "opened_at", "closed_at", "status",
+            ),
+            rows,
+        )
+
+
+def _load_open_banking_transactions(
+    cur: psycopg.Cursor, batch_id: int, path: Path,
+) -> None:
+    if not path.is_file():
+        return
+    try:
+        doc = json.loads(_read_text_any(path))
+    except json.JSONDecodeError:
+        return
+    items = (doc.get("Data") or {}).get("Transaction") or []
+    if not items:
+        return
+    row_out: list[dict[str, Any]] = []
+    for t in items:
+        amt = (t.get("Amount") or {}) if isinstance(t.get("Amount"), dict) else {}
+        a_s = (amt.get("Amount") or "0").replace(",", ".")
+        ind = (t.get("CreditDebitIndicator") or "Debit").lower()
+        direction = "D" if "debit" in ind else "C"
+        bcode = t.get("BankTransactionCode")
+        if isinstance(bcode, dict):
+            op = (bcode.get("Code") or "PAYMENT")[:50]
+        else:
+            op = "PAYMENT"
+        bdt = t.get("BookingDateTime")
+        m = (t.get("MerchantDetails") or {}) if isinstance(t.get("MerchantDetails"), dict) else {}
+        row_out.append(
+            {
+                "source_transaction_id": t.get("TransactionId"),
+                "source_client_id": t.get("CustomerId"),
+                "source_account_id": t.get("AccountId"),
+                "source_product_id": None,
+                "channel_code": "ONLINE",
+                "operation_type_code": op,
+                "operation_ts": bdt,
+                "amount": a_s,
+                "currency_code": (amt.get("Currency") or "INR")[:8],
+                "direction": direction,
+                "status": (t.get("Status") or "POSTED")[:30],
+                "merchant_name": (m.get("MerchantName") or "").strip() or None,
+                "description": (t.get("TransactionInformation") or "").strip() or None,
+            },
+        )
+    for r in row_out:
+        _normalize_manifest_row("stg.abs_transactions_raw", r)
+    if row_out:
+        _insert_stg_rows(
+            cur,
+            batch_id,
+            "stg.abs_transactions_raw",
+            (
+                "source_transaction_id", "source_client_id", "source_account_id", "source_product_id",
+                "channel_code", "operation_type_code", "operation_ts", "amount", "currency_code",
+                "direction", "status", "merchant_name", "description",
+            ),
+            row_out,
+        )
+
+
+def _complaint_channel(ch: str | None) -> str:
+    m = {
+        "web": "WEB",
+        "phone": "TELEPHONE",
+        "email": "EMAIL",
+        "referral": "REFERRAL",
+    }
+    k = (ch or "").strip().lower()
+    return m.get(k, "WEB")
+
+
+def _complaint_status(st: str | None) -> str:
+    s = (st or "").lower()
+    if "progress" in s:
+        return "OPEN"
+    if "closed" in s or "monetary" in s or "non-monetary" in s:
+        return "CLOSED"
+    return "OPEN"
+
+
+def _load_consumer_complaints_json(
+    cur: psycopg.Cursor, batch_id: int, path: Path,
+) -> None:
+    if not path.is_file():
+        return
+    try:
+        doc = json.loads(_read_text_any(path))
+    except json.JSONDecodeError:
+        return
+    complaints = doc.get("complaints") or []
+    rows: list[dict[str, Any]] = []
+    for c in complaints:
+        cid = (c.get("complaint_id") or "").strip()
+        if not cid:
+            continue
+        d0 = (c.get("date_received") or "")[:10]
+        ts0 = f"{d0}T00:00:00Z" if d0 else None
+        txt = " ".join(
+            filter(
+                None,
+                [
+                    c.get("product"),
+                    c.get("issue"),
+                    (c.get("narrative") or "")[:500],
+                ],
+            ),
+        )
+        rows.append(
+            {
+                "source_appeal_id": cid,
+                "source_client_id": (c.get("customer_id") or "").strip(),
+                "channel_code": _complaint_channel(c.get("submitted_via")),
+                "appeal_type_code": "CONSUMER",
+                "created_ts": ts0,
+                "resolved_ts": None,
+                "status": _complaint_status(c.get("company_response")),
+                "priority": "2",
+                "result_text": txt or None,
+            },
+        )
+    if not rows:
+        return
+    _insert_stg_rows(
+        cur,
+        batch_id,
+        "stg.appeals_raw",
+        (
+            "source_appeal_id", "source_client_id", "channel_code", "appeal_type_code",
+            "created_ts", "resolved_ts", "status", "priority", "result_text",
+        ),
+        rows,
+    )
+
+
+def _local_tag(tag: str) -> str:
+    return tag.split("}")[-1] if "}" in tag else tag
+
+
+def _find_acct_othr_id(acct_el: Any) -> str:
+    for el in acct_el.iter():
+        if _local_tag(el.tag) != "Othr":
+            continue
+        for sub in el:
+            if _local_tag(sub.tag) == "Id" and (sub.text or "").strip().isdigit():
+                return (sub.text or "").strip()
+    for el in acct_el.iter():
+        if _local_tag(el.tag) == "Id" and (el.text or "").strip() and (el.text or "").strip().isdigit():
+            return (el.text or "").strip()
+    return ""
+
+
+def _load_camt_file(
+    cur: psycopg.Cursor, batch_id: int, path: Path, acc_to_client: dict[str, str], op_type: str,
+) -> None:
+    if not path.is_file():
+        return
+    try:
+        root = ET.parse(path).getroot()
+    except ET.ParseError:
+        return
+    rows: list[dict[str, Any]] = []
+    for parent in root.iter():
+        tname = _local_tag(parent.tag)
+        if tname not in ("Stmt", "Ntfctn"):
+            continue
+        acct_id = ""
+        for ch in list(parent):
+            if _local_tag(ch.tag) == "Acct":
+                acct_id = _find_acct_othr_id(ch)
+                break
+        if not acct_id:
+            continue
+        base_client = acc_to_client.get(str(acct_id), "")
+        for ntry in parent:
+            if _local_tag(ntry.tag) != "Ntry":
+                continue
+            amt_s = "0"
+            ccy = "INR"
+            for c in ntry:
+                if _local_tag(c.tag) == "Amt":
+                    amt_s = (c.text or "0").strip() or "0"
+                    ccy = (c.get("Ccy") or "INR")[:8]
+                    break
+            ind = "DBIT"
+            for c in ntry:
+                if _local_tag(c.tag) == "CdtDbtInd" and c.text:
+                    ind = c.text.strip()
+                    break
+            direction = "D" if "DBIT" in ind.upper() else "C"
+            bdt = ""
+            for c in ntry:
+                if _local_tag(c.tag) == "BookgDt":
+                    for s in c.iter():
+                        if _local_tag(s.tag) == "Dt" and s.text:
+                            bdt = s.text.strip()[:10]
+                            break
+            ref = ""
+            for c in ntry:
+                if _local_tag(c.tag) == "AcctSvcrRef" and c.text:
+                    ref = c.text.strip()
+                    break
+            if not ref:
+                continue
+            rem = ""
+            for t in ntry.iter():
+                if _local_tag(t.tag) == "Ustrd" and t.text:
+                    rem = t.text.strip()
+                    break
+            source_client = base_client
+            for t in ntry.iter():
+                if _local_tag(t.tag) == "Nm" and t.text and "Customer" in t.text:
+                    m = re.search(r"Customer (\d+)", t.text)
+                    if m:
+                        source_client = m.group(1)
+            if not source_client:
+                source_client = base_client
+            if not (source_client and str(source_client) != "0"):
+                continue
+            op_ts = f"{bdt}T12:00:00+00:00" if bdt else None
+            try:
+                am = abs(float(amt_s.replace(",", ".")))
+            except ValueError:
+                continue
+            rows.append(
+                {
+                    "source_transaction_id": f"ISO{op_type}-{ref}"[:100],
+                    "source_client_id": str(source_client).strip(),
+                    "source_account_id": acct_id,
+                    "source_product_id": None,
+                    "channel_code": "ONLINE",
+                    "operation_type_code": "CAMT_STMT" if op_type == "053" else "CAMT_NTF",
+                    "operation_ts": op_ts,
+                    "amount": str(am),
+                    "currency_code": ccy,
+                    "direction": direction,
+                    "status": "POSTED",
+                    "merchant_name": f"camt{op_type}",
+                    "description": (rem or f"camt {op_type}")[:2000],
+                },
+            )
+    if not rows:
+        return
+    for r in rows:
+        _normalize_manifest_row("stg.abs_transactions_raw", r)
+    _insert_stg_rows(
+        cur,
+        batch_id,
+        "stg.abs_transactions_raw",
+        (
+            "source_transaction_id", "source_client_id", "source_account_id", "source_product_id",
+            "channel_code", "operation_type_code", "operation_ts", "amount", "currency_code",
+            "direction", "status", "merchant_name", "description",
+        ),
+        rows,
+    )
+
+
+def _account_client_map(data_roots: list[Path], manifest_dir: Path | None) -> dict[str, str]:
+    m: dict[str, str] = {}
+    paths: list[Path] = []
+    for root in data_roots:
+        p = root / "tsv_abs" / "abs_accounts_external.tsv"
+        if p.is_file():
+            paths.append(p)
+    if manifest_dir and manifest_dir.is_dir():
+        p2 = manifest_dir / "tsv_abs" / "abs_accounts_external.tsv"
+        if p2.is_file():
+            paths.append(p2)
+    for p in paths:
+        for r in _read_delimited(p, "\t"):
+            a = (r.get("account_id") or "").strip()
+            c = (r.get("client_id") or "").strip()
+            if a and c:
+                m[a] = c
+    return m
+
+
+def _load_xlsx_crm_sheets(
+    cur: psycopg.Cursor, batch_id: int, path: Path,
+) -> None:
+    if not path.is_file():
+        return
+    try:
+        from openpyxl import load_workbook
+    except ImportError:
+        return
+    wb = load_workbook(path, read_only=True, data_only=True)
+    mkt = wb["CRM campaigns"] if "CRM campaigns" in wb.sheetnames else None
+    risk = wb["Credit card risk"] if "Credit card risk" in wb.sheetnames else None
+    if mkt is not None:
+        rows: list[dict[str, Any]] = []
+        it = mkt.iter_rows(min_row=2, values_only=True)
+        for row in it:
+            if not row or row[0] is None:
+                continue
+            rows.append(
+                {
+                    "campaign_id": str(row[0] or "")[:32],
+                    "customer_id": str(row[1] or "")[:32],
+                    "age": str(row[2]) if row[2] is not None else None,
+                    "job": str(row[3] or "")[:64] if len(row) > 3 else None,
+                    "marital": str(row[4] or "")[:32] if len(row) > 4 else None,
+                    "education": str(row[5] or "")[:32] if len(row) > 5 else None,
+                    "default_flag": str(row[6] or "")[:16] if len(row) > 6 else None,
+                    "housing_loan": str(row[7] or "")[:16] if len(row) > 7 else None,
+                    "personal_loan": str(row[8] or "")[:16] if len(row) > 8 else None,
+                    "contact_channel": str(row[9] or "")[:32] if len(row) > 9 else None,
+                    "last_contact_date": str(row[10] or "")[:32] if len(row) > 10 else None,
+                    "campaign_contacts": str(row[11] or "")[:16] if len(row) > 11 else None,
+                    "previous_outcome": str(row[12] or "")[:32] if len(row) > 12 else None,
+                    "term_deposit_subscribed": str(row[13] or "")[:8] if len(row) > 13 else None,
+                },
+            )
+        if rows:
+            _insert_stg_rows(
+                cur,
+                batch_id,
+                "stg.crm_marketing_raw",
+                (
+                    "campaign_id", "customer_id", "age", "job", "marital", "education", "default_flag",
+                    "housing_loan", "personal_loan", "contact_channel", "last_contact_date",
+                    "campaign_contacts", "previous_outcome", "term_deposit_subscribed",
+                ),
+                rows,
+            )
+    if risk is not None:
+        rows2: list[dict[str, Any]] = []
+        for row in risk.iter_rows(min_row=2, values_only=True):
+            if not row or row[0] is None:
+                continue
+            rows2.append(
+                {
+                    "customer_id": str(row[0] or "")[:32],
+                    "limit_balance": str(row[1] or "") if len(row) > 1 else None,
+                    "sex": str(row[2] or "")[:8] if len(row) > 2 else None,
+                    "education": str(row[3] or "")[:32] if len(row) > 3 else None,
+                    "marriage": str(row[4] or "")[:32] if len(row) > 4 else None,
+                    "age": str(row[5] or "")[:16] if len(row) > 5 else None,
+                    "pay_status_m1": str(row[6] or "")[:8] if len(row) > 6 else None,
+                    "pay_status_m2": str(row[7] or "")[:8] if len(row) > 7 else None,
+                    "bill_amt_m1": str(row[8] or "") if len(row) > 8 else None,
+                    "bill_amt_m2": str(row[9] or "") if len(row) > 9 else None,
+                    "pay_amt_m1": str(row[10] or "") if len(row) > 10 else None,
+                    "pay_amt_m2": str(row[11] or "") if len(row) > 11 else None,
+                    "default_next_month": str(row[12] or "")[:4] if len(row) > 12 else None,
+                },
+            )
+        if rows2:
+            _insert_stg_rows(
+                cur,
+                batch_id,
+                "stg.credit_risk_raw",
+                (
+                    "customer_id", "limit_balance", "sex", "education", "marriage", "age", "pay_status_m1",
+                    "pay_status_m2", "bill_amt_m1", "bill_amt_m2", "pay_amt_m1", "pay_amt_m2",
+                    "default_next_month",
+                ),
+                rows2,
+            )
+    wb.close()
+
+
+def _load_datasets_extras(
+    cur: psycopg.Cursor, batch_id: int, data_roots: list[Path], manifest_dir: Path | None,
+) -> None:
+    roots = list(data_roots)
+    if manifest_dir and manifest_dir.is_dir():
+        roots.append(manifest_dir)
+    mdir = manifest_dir if manifest_dir and manifest_dir.is_dir() else None
+    tsv = (mdir / "tsv_abs") if mdir else None
+    if tsv and tsv.is_dir():
+        _load_tsv_abs_transactions(cur, batch_id, tsv / "abs_transactions_external.tsv")
+        _load_tsv_product_catalog(cur, batch_id, tsv / "abs_products_external.tsv")
+    for base in roots:
+        p = base / "logs" / "dbo_events.jsonl"
+        if p.is_file():
+            _load_dbo_jsonl(cur, batch_id, p)
+    for base in roots:
+        ja = base / "json_api" / "open_banking_accounts.json"
+        jt = base / "json_api" / "open_banking_transactions.json"
+        jc = base / "json_api" / "consumer_complaints_sample.json"
+        if ja.is_file():
+            _load_open_banking_accounts(cur, batch_id, ja)
+        if jt.is_file():
+            _load_open_banking_transactions(cur, batch_id, jt)
+        if jc.is_file():
+            _load_consumer_complaints_json(cur, batch_id, jc)
+    acc_m = _account_client_map(data_roots, mdir)
+    for base in roots:
+        d = base / "xml_iso20022"
+        if d.is_dir():
+            p53 = d / "camt_053_statement_sample.xml"
+            p54 = d / "camt_054_credit_notification_sample.xml"
+            if p53.is_file():
+                _load_camt_file(cur, batch_id, p53, acc_m, "053")
+            if p54.is_file():
+                _load_camt_file(cur, batch_id, p54, acc_m, "054")
+    for base in roots:
+        x = base / "xlsx_crm" / "crm_credit_sources.xlsx"
+        if x.is_file():
+            _load_xlsx_crm_sheets(cur, batch_id, x)
 
 
 def load_all_csv(
@@ -189,6 +824,7 @@ def load_all_csv(
 
         if manifest_dir and manifest_dir.is_dir():
             _load_manifest_extra(cur, batch_id, manifest_dir)
+        _load_datasets_extras(cur, batch_id, data_roots, manifest_dir)
 
 
 ABS_SOURCE_ID = 1
@@ -779,6 +1415,135 @@ def transform_batch(conn: psycopg.Connection, batch_id: int) -> None:
             )
             apid += 1
 
+        cur.execute(
+            """
+            SELECT product_id, product_name, product_group, description, interest_rate, credit_limit,
+                   active_flag, source_system
+            FROM stg.product_catalog_raw WHERE batch_id = %s
+            """,
+            (batch_id,),
+        )
+        for pr in cur.fetchall():
+            pid, pn, pg, desc, ir, cl, af, ss = pr
+            if not pid:
+                continue
+            flag = (af or "N")[:1].upper() if af else None
+            cur.execute(
+                """
+                INSERT INTO dwh.ref_product_catalog (
+                    product_id, product_name, product_group, description, interest_rate, credit_limit,
+                    active_flag, source_system
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (product_id) DO UPDATE SET
+                    product_name = EXCLUDED.product_name,
+                    product_group = EXCLUDED.product_group,
+                    description = EXCLUDED.description,
+                    interest_rate = EXCLUDED.interest_rate,
+                    credit_limit = EXCLUDED.credit_limit,
+                    active_flag = EXCLUDED.active_flag,
+                    source_system = EXCLUDED.source_system
+                """,
+                (
+                    int(pid),
+                    pn,
+                    pg,
+                    desc,
+                    _parse_decimal(str(ir)) if ir else None,
+                    _parse_decimal(str(cl)) if cl else None,
+                    flag,
+                    ss,
+                ),
+            )
+
+        cur.execute(
+            """
+            SELECT campaign_id, customer_id, age, job, marital, education, default_flag, housing_loan,
+                   personal_loan, contact_channel, last_contact_date, campaign_contacts, previous_outcome,
+                   term_deposit_subscribed
+            FROM stg.crm_marketing_raw WHERE batch_id = %s
+            """,
+            (batch_id,),
+        )
+        for cr in cur.fetchall():
+            camp, cust, age_s, job, mar, edu, dfl, hloan, ploan, cch, lcd, ccc, po, tds = cr
+            if not camp:
+                continue
+            cl_id = source_to_client.get(str(cust).strip() if cust else "", None)
+            if cl_id is None:
+                continue
+            age = int(age_s) if age_s and str(age_s).strip().isdigit() else None
+            lcd_d = _parse_date(str(lcd)) if lcd else None
+            ccn = int(ccc) if ccc and str(ccc).strip().isdigit() else None
+            cur.execute(
+                """
+                INSERT INTO dwh.crm_marketing_leads (
+                    client_id, campaign_id, age, job, marital, education, default_flag, housing_loan,
+                    personal_loan, contact_channel, last_contact_date, campaign_contacts, previous_outcome,
+                    term_deposit_subscribed
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (client_id, campaign_id) DO UPDATE SET
+                    age = EXCLUDED.age,
+                    job = EXCLUDED.job,
+                    term_deposit_subscribed = EXCLUDED.term_deposit_subscribed
+                """,
+                (
+                    cl_id, camp, age, job, mar, edu, dfl, hloan, ploan, cch, lcd_d, ccn, po, tds,
+                ),
+            )
+
+        cur.execute(
+            """
+            SELECT customer_id, limit_balance, sex, education, marriage, age, pay_status_m1, pay_status_m2,
+                   bill_amt_m1, bill_amt_m2, pay_amt_m1, pay_amt_m2, default_next_month
+            FROM stg.credit_risk_raw WHERE batch_id = %s
+            """,
+            (batch_id,),
+        )
+        for tr in cur.fetchall():
+            cust, lb, sx, edu, mrg, age_s, ps1, ps2, b1, b2, p1, p2, defm = tr
+            cl_id = source_to_client.get(str(cust).strip() if cust else "", None)
+            if cl_id is None:
+                continue
+            age = int(age_s) if age_s and str(age_s).strip().isdigit() else None
+            try:
+                p1i = int(str(ps1).strip()) if ps1 is not None and str(ps1).strip() else None
+            except ValueError:
+                p1i = None
+            try:
+                p2i = int(str(ps2).strip()) if ps2 is not None and str(ps2).strip() else None
+            except ValueError:
+                p2i = None
+            dnm = int(defm) if defm is not None and str(defm).strip().isdigit() else None
+            cur.execute(
+                """
+                INSERT INTO dwh.credit_risk_features (
+                    client_id, source_customer_id, limit_balance, sex, education, marriage, age,
+                    pay_status_m1, pay_status_m2, bill_amt_m1, bill_amt_m2, pay_amt_m1, pay_amt_m2,
+                    default_next_month
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (client_id) DO UPDATE SET
+                    limit_balance = EXCLUDED.limit_balance,
+                    default_next_month = EXCLUDED.default_next_month
+                """,
+                (
+                    cl_id,
+                    str(cust).strip(),
+                    _parse_decimal(str(lb)) if lb else None,
+                    sx,
+                    edu,
+                    mrg,
+                    age,
+                    p1i,
+                    p2i,
+                    _parse_decimal(str(b1)) if b1 else None,
+                    _parse_decimal(str(b2)) if b2 else None,
+                    _parse_decimal(str(p1)) if p1 else None,
+                    _parse_decimal(str(p2)) if p2 else None,
+                    dnm,
+                ),
+            )
+
+
 def recompute_client_segments(conn: psycopg.Connection, report_date: date) -> None:
     """
     NEW - дата регистрации/создания клиента в пределах 90 дней до отчёта.
@@ -965,6 +1730,9 @@ def truncate_dwh_and_stg(conn: psycopg.Connection) -> None:
             TRUNCATE TABLE
                 dwh.client_profile_export,
                 dwh.client_segments_history,
+                dwh.crm_marketing_leads,
+                dwh.credit_risk_features,
+                dwh.ref_product_catalog,
                 dwh.appeals,
                 dwh.digital_events,
                 dwh.transactions,
@@ -981,6 +1749,9 @@ def truncate_dwh_and_stg(conn: psycopg.Connection) -> None:
             TRUNCATE TABLE
                 stg.appeals_raw,
                 stg.dbo_events_raw,
+                stg.credit_risk_raw,
+                stg.crm_marketing_raw,
+                stg.product_catalog_raw,
                 stg.abs_transactions_raw,
                 stg.abs_products_raw,
                 stg.abs_accounts_raw,

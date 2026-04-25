@@ -2,6 +2,7 @@
   "additional_loaders": [
     {
       "file": "Banking and Customer Transaction Data/customer_data.csv",
+      "format": "csv",
       "table": "stg.abs_clients_raw",
       "columns": [
         "source_client_id",
@@ -27,6 +28,7 @@
     },
     {
       "file": "Banking and Customer Transaction Data/transaction_data.csv",
+      "format": "csv",
       "table": "stg.abs_transactions_raw",
       "columns": [
         "source_transaction_id",
@@ -51,6 +53,59 @@
         "Transaction_Date": "operation_ts",
         "Investment_Type": "operation_type_code",
         "Total_Balance": "description"
+      }
+    },
+    {
+      "file": "tsv_abs/abs_clients_external.tsv",
+      "format": "tsv",
+      "table": "stg.abs_clients_raw",
+      "columns": [
+        "source_client_id",
+        "client_type",
+        "first_name",
+        "last_name",
+        "middle_name",
+        "birth_date",
+        "registration_date",
+        "tax_id",
+        "phone",
+        "email",
+        "region_code",
+        "status"
+      ],
+      "column_map": {
+        "client_id": "source_client_id",
+        "customer_type": "client_type",
+        "city": "first_name",
+        "bank_name": "last_name",
+        "gender": "middle_name",
+        "region": "region_code",
+        "birth_date": "birth_date",
+        "birth_number": "tax_id"
+      }
+    },
+    {
+      "file": "tsv_abs/abs_accounts_external.tsv",
+      "format": "tsv",
+      "table": "stg.abs_accounts_raw",
+      "columns": [
+        "source_account_id",
+        "source_client_id",
+        "account_number_masked",
+        "account_type",
+        "currency_code",
+        "opened_at",
+        "closed_at",
+        "status"
+      ],
+      "column_map": {
+        "account_id": "source_account_id",
+        "client_id": "source_client_id",
+        "account_type": "account_type",
+        "currency": "currency_code",
+        "open_date": "opened_at",
+        "close_date": "closed_at",
+        "status": "status"
       }
     }
   ]

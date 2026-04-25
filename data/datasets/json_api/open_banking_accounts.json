@@ -1,0 +1,1512 @@
+{
+  "Data": {
+    "Account": [
+      {
+        "AccountId": "600000",
+        "CustomerId": "200000",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Savings",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1350"
+      },
+      {
+        "AccountId": "600001",
+        "CustomerId": "200001",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Loan",
+        "Nickname": "Retail account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1648"
+      },
+      {
+        "AccountId": "600002",
+        "CustomerId": "200002",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1798"
+      },
+      {
+        "AccountId": "600003",
+        "CustomerId": "200003",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1900"
+      },
+      {
+        "AccountId": "600004",
+        "CustomerId": "200004",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Savings",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1227"
+      },
+      {
+        "AccountId": "600005",
+        "CustomerId": "200005",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Loan",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1015"
+      },
+      {
+        "AccountId": "600006",
+        "CustomerId": "200006",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1809"
+      },
+      {
+        "AccountId": "600007",
+        "CustomerId": "200007",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Savings",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1424"
+      },
+      {
+        "AccountId": "600008",
+        "CustomerId": "200008",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Savings",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1463"
+      },
+      {
+        "AccountId": "600009",
+        "CustomerId": "200009",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1723"
+      },
+      {
+        "AccountId": "600010",
+        "CustomerId": "200010",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1245"
+      },
+      {
+        "AccountId": "600011",
+        "CustomerId": "200011",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1797"
+      },
+      {
+        "AccountId": "600012",
+        "CustomerId": "200012",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1793"
+      },
+      {
+        "AccountId": "600013",
+        "CustomerId": "200013",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1176"
+      },
+      {
+        "AccountId": "600014",
+        "CustomerId": "200014",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1542"
+      },
+      {
+        "AccountId": "600015",
+        "CustomerId": "200015",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Savings",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1508"
+      },
+      {
+        "AccountId": "600016",
+        "CustomerId": "200016",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1561"
+      },
+      {
+        "AccountId": "600017",
+        "CustomerId": "200017",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1654"
+      },
+      {
+        "AccountId": "600018",
+        "CustomerId": "200018",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Savings",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1563"
+      },
+      {
+        "AccountId": "600019",
+        "CustomerId": "200019",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Savings",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1232"
+      },
+      {
+        "AccountId": "600020",
+        "CustomerId": "200020",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1677"
+      },
+      {
+        "AccountId": "600021",
+        "CustomerId": "200021",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1037"
+      },
+      {
+        "AccountId": "600022",
+        "CustomerId": "200022",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1490"
+      },
+      {
+        "AccountId": "600023",
+        "CustomerId": "200023",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Savings",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1443"
+      },
+      {
+        "AccountId": "600024",
+        "CustomerId": "200024",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1019"
+      },
+      {
+        "AccountId": "600025",
+        "CustomerId": "200025",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Savings",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1610"
+      },
+      {
+        "AccountId": "600026",
+        "CustomerId": "200026",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Savings",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1726"
+      },
+      {
+        "AccountId": "600027",
+        "CustomerId": "200027",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1555"
+      },
+      {
+        "AccountId": "600028",
+        "CustomerId": "200028",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Retail account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1110"
+      },
+      {
+        "AccountId": "600029",
+        "CustomerId": "200029",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1486"
+      },
+      {
+        "AccountId": "600030",
+        "CustomerId": "200030",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1088"
+      },
+      {
+        "AccountId": "600031",
+        "CustomerId": "200031",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1318"
+      },
+      {
+        "AccountId": "600032",
+        "CustomerId": "200032",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1117"
+      },
+      {
+        "AccountId": "600033",
+        "CustomerId": "200033",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1433"
+      },
+      {
+        "AccountId": "600034",
+        "CustomerId": "200034",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1917"
+      },
+      {
+        "AccountId": "600035",
+        "CustomerId": "200035",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Savings",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1238"
+      },
+      {
+        "AccountId": "600036",
+        "CustomerId": "200036",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1071"
+      },
+      {
+        "AccountId": "600037",
+        "CustomerId": "200037",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Savings",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1821"
+      },
+      {
+        "AccountId": "600038",
+        "CustomerId": "200038",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Savings",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1904"
+      },
+      {
+        "AccountId": "600039",
+        "CustomerId": "200039",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1398"
+      },
+      {
+        "AccountId": "600040",
+        "CustomerId": "200040",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1815"
+      },
+      {
+        "AccountId": "600041",
+        "CustomerId": "200041",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1403"
+      },
+      {
+        "AccountId": "600042",
+        "CustomerId": "200042",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Loan",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1674"
+      },
+      {
+        "AccountId": "600043",
+        "CustomerId": "200043",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1250"
+      },
+      {
+        "AccountId": "600044",
+        "CustomerId": "200044",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Savings",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1868"
+      },
+      {
+        "AccountId": "600045",
+        "CustomerId": "200045",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1194"
+      },
+      {
+        "AccountId": "600046",
+        "CustomerId": "200046",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1571"
+      },
+      {
+        "AccountId": "600047",
+        "CustomerId": "200047",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1609"
+      },
+      {
+        "AccountId": "600048",
+        "CustomerId": "200048",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1929"
+      },
+      {
+        "AccountId": "600049",
+        "CustomerId": "200049",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1867"
+      },
+      {
+        "AccountId": "600050",
+        "CustomerId": "200050",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1866"
+      },
+      {
+        "AccountId": "600051",
+        "CustomerId": "200051",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Savings",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1584"
+      },
+      {
+        "AccountId": "600052",
+        "CustomerId": "200052",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Savings",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1221"
+      },
+      {
+        "AccountId": "600053",
+        "CustomerId": "200053",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1630"
+      },
+      {
+        "AccountId": "600054",
+        "CustomerId": "200054",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1181"
+      },
+      {
+        "AccountId": "600055",
+        "CustomerId": "200055",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Savings",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1895"
+      },
+      {
+        "AccountId": "600056",
+        "CustomerId": "200056",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1729"
+      },
+      {
+        "AccountId": "600057",
+        "CustomerId": "200057",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1255"
+      },
+      {
+        "AccountId": "600058",
+        "CustomerId": "200058",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1907"
+      },
+      {
+        "AccountId": "600059",
+        "CustomerId": "200059",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Savings",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1087"
+      },
+      {
+        "AccountId": "600060",
+        "CustomerId": "200060",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Savings",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1872"
+      },
+      {
+        "AccountId": "600061",
+        "CustomerId": "200061",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1786"
+      },
+      {
+        "AccountId": "600062",
+        "CustomerId": "200062",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1491"
+      },
+      {
+        "AccountId": "600063",
+        "CustomerId": "200063",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1335"
+      },
+      {
+        "AccountId": "600064",
+        "CustomerId": "200064",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Savings",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1537"
+      },
+      {
+        "AccountId": "600065",
+        "CustomerId": "200065",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1406"
+      },
+      {
+        "AccountId": "600066",
+        "CustomerId": "200066",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Savings",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1632"
+      },
+      {
+        "AccountId": "600067",
+        "CustomerId": "200067",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1288"
+      },
+      {
+        "AccountId": "600068",
+        "CustomerId": "200068",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Loan",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1361"
+      },
+      {
+        "AccountId": "600069",
+        "CustomerId": "200069",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1440"
+      },
+      {
+        "AccountId": "600070",
+        "CustomerId": "200070",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1029"
+      },
+      {
+        "AccountId": "600071",
+        "CustomerId": "200071",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1918"
+      },
+      {
+        "AccountId": "600072",
+        "CustomerId": "200072",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Loan",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1713"
+      },
+      {
+        "AccountId": "600073",
+        "CustomerId": "200073",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Savings",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1893"
+      },
+      {
+        "AccountId": "600074",
+        "CustomerId": "200074",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1547"
+      },
+      {
+        "AccountId": "600075",
+        "CustomerId": "200075",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Savings",
+        "Nickname": "Retail account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1636"
+      },
+      {
+        "AccountId": "600076",
+        "CustomerId": "200076",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1222"
+      },
+      {
+        "AccountId": "600077",
+        "CustomerId": "200077",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1746"
+      },
+      {
+        "AccountId": "600078",
+        "CustomerId": "200078",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1123"
+      },
+      {
+        "AccountId": "600079",
+        "CustomerId": "200079",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1981"
+      },
+      {
+        "AccountId": "600080",
+        "CustomerId": "200080",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1682"
+      },
+      {
+        "AccountId": "600081",
+        "CustomerId": "200081",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1997"
+      },
+      {
+        "AccountId": "600082",
+        "CustomerId": "200082",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1961"
+      },
+      {
+        "AccountId": "600083",
+        "CustomerId": "200083",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1692"
+      },
+      {
+        "AccountId": "600084",
+        "CustomerId": "200084",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1214"
+      },
+      {
+        "AccountId": "600085",
+        "CustomerId": "200085",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Savings",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1117"
+      },
+      {
+        "AccountId": "600086",
+        "CustomerId": "200086",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1226"
+      },
+      {
+        "AccountId": "600087",
+        "CustomerId": "200087",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1890"
+      },
+      {
+        "AccountId": "600088",
+        "CustomerId": "200088",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1443"
+      },
+      {
+        "AccountId": "600089",
+        "CustomerId": "200089",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Savings",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1548"
+      },
+      {
+        "AccountId": "600090",
+        "CustomerId": "200090",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Savings",
+        "Nickname": "Retail account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1828"
+      },
+      {
+        "AccountId": "600091",
+        "CustomerId": "200091",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1607"
+      },
+      {
+        "AccountId": "600092",
+        "CustomerId": "200092",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "CreditCard",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1631"
+      },
+      {
+        "AccountId": "600093",
+        "CustomerId": "200093",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Savings",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1436"
+      },
+      {
+        "AccountId": "600094",
+        "CustomerId": "200094",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "CurrentAccount",
+        "Nickname": "Business account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1011"
+      },
+      {
+        "AccountId": "600095",
+        "CustomerId": "200095",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1121"
+      },
+      {
+        "AccountId": "600096",
+        "CustomerId": "200096",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1546"
+      },
+      {
+        "AccountId": "600097",
+        "CustomerId": "200097",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Loan",
+        "Nickname": "Individual account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1488"
+      },
+      {
+        "AccountId": "600098",
+        "CustomerId": "200098",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Business",
+        "AccountSubType": "Loan",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1250"
+      },
+      {
+        "AccountId": "600099",
+        "CustomerId": "200099",
+        "Status": "Enabled",
+        "StatusUpdateDateTime": "2026-04-25T08:00:00Z",
+        "Currency": "INR",
+        "AccountType": "Personal",
+        "AccountSubType": "Loan",
+        "Nickname": "Employee account",
+        "Servicer": {
+          "SchemeName": "BICFI",
+          "Identification": "BKDWHIN0"
+        },
+        "BranchId": "1578"
+      }
+    ]
+  },
+  "Links": {
+    "Self": "/open-banking/v3.1/aisp/accounts"
+  },
+  "Meta": {
+    "TotalPages": 1
+  }
+}

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">
+  <BkToCstmrStmt>
+    <GrpHdr>
+      <MsgId>BKDWH-CAMT053-20260425-001</MsgId>
+      <CreDtTm>2026-04-25T08:00:00Z</CreDtTm>
+    </GrpHdr>
+    <Stmt>
+      <Id>STATEMENT-600000-20260425</Id>
+      <ElctrncSeqNb>1</ElctrncSeqNb>
+      <CreDtTm>2026-04-25T08:00:00Z</CreDtTm>
+      <Acct>
+        <Id><Othr><Id>600000</Id></Othr></Id>
+        <Ccy>INR</Ccy>
+        <Nm>BankDWH synthetic current account</Nm>
+      </Acct>
+      <Bal>
+        <Tp><CdOrPrtry><Cd>OPBD</Cd></CdOrPrtry></Tp>
+        <Amt Ccy="INR">125000.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt><Dt>2026-04-24</Dt></Dt>
+      </Bal>
+      
+      <Ntry>
+        <Amt Ccy="INR">4794.00</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2024-12-08</Dt></BookgDt>
+        <AcctSvcrRef>300000</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>E2E-300000</EndToEndId></Refs>
+            <RltdPties><Dbtr><Nm>Customer 200248</Nm></Dbtr></RltdPties>
+            <RmtInf><Ustrd>Card settlement</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="INR">3500.00</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2022-09-09</Dt></BookgDt>
+        <AcctSvcrRef>300001</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>E2E-300001</EndToEndId></Refs>
+            <RltdPties><Dbtr><Nm>Customer 200709</Nm></Dbtr></RltdPties>
+            <RmtInf><Ustrd>Salary payment</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="INR">2401.00</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2022-04-28</Dt></BookgDt>
+        <AcctSvcrRef>300002</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>E2E-300002</EndToEndId></Refs>
+            <RltdPties><Dbtr><Nm>Customer 200804</Nm></Dbtr></RltdPties>
+            <RmtInf><Ustrd>Salary payment</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="INR">2952.00</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2023-05-22</Dt></BookgDt>
+        <AcctSvcrRef>300003</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>E2E-300003</EndToEndId></Refs>
+            <RltdPties><Dbtr><Nm>Customer 200137</Nm></Dbtr></RltdPties>
+            <RmtInf><Ustrd>Internal transfer</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="INR">1025.00</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2023-04-05</Dt></BookgDt>
+        <AcctSvcrRef>300004</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>E2E-300004</EndToEndId></Refs>
+            <RltdPties><Dbtr><Nm>Customer 200791</Nm></Dbtr></RltdPties>
+            <RmtInf><Ustrd>Utility payment</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="INR">3685.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2023-03-02</Dt></BookgDt>
+        <AcctSvcrRef>300005</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>E2E-300005</EndToEndId></Refs>
+            <RltdPties><Dbtr><Nm>Customer 200615</Nm></Dbtr></RltdPties>
+            <RmtInf><Ustrd>Salary payment</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="INR">2343.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2022-10-23</Dt></BookgDt>
+        <AcctSvcrRef>300006</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>E2E-300006</EndToEndId></Refs>
+            <RltdPties><Dbtr><Nm>Customer 200086</Nm></Dbtr></RltdPties>
+            <RmtInf><Ustrd>Utility payment</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="INR">1985.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2022-08-27</Dt></BookgDt>
+        <AcctSvcrRef>300007</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>E2E-300007</EndToEndId></Refs>
+            <RltdPties><Dbtr><Nm>Customer 200817</Nm></Dbtr></RltdPties>
+            <RmtInf><Ustrd>Internal transfer</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="INR">5224.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2025-02-04</Dt></BookgDt>
+        <AcctSvcrRef>300008</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>E2E-300008</EndToEndId></Refs>
+            <RltdPties><Dbtr><Nm>Customer 200452</Nm></Dbtr></RltdPties>
+            <RmtInf><Ustrd>Utility payment</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="INR">3714.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2024-07-15</Dt></BookgDt>
+        <AcctSvcrRef>300009</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>E2E-300009</EndToEndId></Refs>
+            <RltdPties><Dbtr><Nm>Customer 200413</Nm></Dbtr></RltdPties>
+            <RmtInf><Ustrd>Utility payment</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Bal>
+        <Tp><CdOrPrtry><Cd>CLBD</Cd></CdOrPrtry></Tp>
+        <Amt Ccy="INR">119845.25</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt><Dt>2026-04-25</Dt></Dt>
+      </Bal>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>
