@@ -1723,6 +1723,36 @@ def refresh_profile_export(conn: psycopg.Connection, report_date: date | None = 
         )
         cur.execute(insert_sql, {"d": report_date})
 
+_LOAD_BATCH_NOTES_INTRO = (
+    "Источники: data/sample, data/datasets. "
+    "Форматы: CSV, TSV, JSON/JSONL, XML, XLSX, API JSON."
+)
+
+_STG_TABLES_FOR_BATCH_COUNTS: tuple[str, ...] = (
+    "abs_clients_raw",
+    "crm_clients_raw",
+    "abs_accounts_raw",
+    "abs_products_raw",
+    "abs_transactions_raw",
+    "dbo_events_raw",
+    "appeals_raw",
+    "product_catalog_raw",
+    "crm_marketing_raw",
+    "credit_risk_raw",
+)
+
+
+def _staging_table_row_counts_line(conn: psycopg.Connection, batch_id: int) -> str:
+    """Сводка COUNT(*) по stg-таблицам для одного batch_id (для load_batch.notes)."""
+    parts: list[str] = []
+    with conn.cursor() as cur:
+        for t in _STG_TABLES_FOR_BATCH_COUNTS:
+            cur.execute(f"SELECT COUNT(*)::bigint FROM stg.{t} WHERE batch_id = %s", (batch_id,))
+            n = int(cur.fetchone()[0])
+            parts.append(f"{t}={n}")
+    return ", ".join(parts)
+
+
 def truncate_dwh_and_stg(conn: psycopg.Connection) -> None:
     with conn.cursor() as cur:
         cur.execute(
@@ -1781,18 +1811,21 @@ def run_load_sources_to_staging(context: dict[str, Any]) -> int:
             cur.execute(
                 """
                 INSERT INTO stg.load_batch (source_system_code, status, notes)
-                VALUES ('SAMPLE_CSV', 'RUNNING', 'CSV: data/sample + data/datasets')
+                VALUES ('STG_FILE_LOAD', 'RUNNING', %s)
                 RETURNING batch_id
-                """
+                """,
+                (_LOAD_BATCH_NOTES_INTRO,),
             )
             batch_id = int(cur.fetchone()[0])
 
         load_all_csv(conn, batch_id, roots, manifest_dir=ds_dir if ds_dir.is_dir() else None)
 
+        counts = _staging_table_row_counts_line(conn, batch_id)
+        loaded_notes = f"{_LOAD_BATCH_NOTES_INTRO} | Загружено в stg: {counts}"
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE stg.load_batch SET status = %s, finished_at = now() WHERE batch_id = %s",
-                ("LOADED", batch_id),
+                "UPDATE stg.load_batch SET status = %s, finished_at = now(), notes = %s WHERE batch_id = %s",
+                ("LOADED", loaded_notes, batch_id),
             )
         conn.commit()
     return batch_id
@@ -1823,7 +1856,7 @@ def run_refresh_client_profile_export(context: dict[str, Any]) -> None:
 
 @dag(
     dag_id="load_data_to_dwh",
-    description="Загрузка из источников (CSV) в stg, преобразование в dwh",
+    description="Загрузка из файлов (мультиформат: CSV, TSV, JSON/JSONL, XML, XLSX и т.д.) в stg, преобразование в dwh",
     schedule="@daily",
     start_date=pendulum.datetime(2026, 1, 1, tz="UTC"),
     catchup=False,
