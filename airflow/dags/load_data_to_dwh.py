@@ -1,10 +1,4 @@
 """
-Источники:
-  - data/sample — CSV
-  - data/datasets/ — sample CSV, manifest.json, tsv_abs/, json_api/,
-  - logs/dbo_events.jsonl, xml_iso20022/, xlsx_crm/
-  - manifest.json: additional_loaders (format csv/tsv, column_map)
-
 Параметры:
   {"reset": true} - очистка таблиц (TRUNCATE stg/dwh фактов)
   {"report_date": "2026-04-01"}  — отчётная дата для витрины
@@ -26,8 +20,8 @@ from uuid import uuid4
 
 import pendulum
 import psycopg
-from airflow.decorators import dag, task
-from airflow.operators.python import get_current_context
+from airflow import DAG
+from airflow.operators.python import PythonOperator, get_current_context
 from bank_dwh import database_url, datasets_data_dir, sample_data_dir
 from bank_dwh.airflow_utils import dag_conf, report_date_for_dag
 from psycopg.types.json import Json
@@ -68,7 +62,7 @@ def _read_delimited(path: Path, delimiter: str) -> list[dict[str, Any]]:
 
 
 def _normalize_manifest_row(table: str, row: dict[str, Any]) -> None:
-    """Приведение значений из внешних датасетов к ожиданиям DWH."""
+    """Приведение значений из внешних датасетов к DWH."""
     if table == "stg.abs_clients_raw":
         cid = row.get("source_client_id")
         if cid is not None and cid != "":
@@ -115,7 +109,7 @@ def _read_rows_for_manifest_file(
         return _read_delimited(path, delimiter)
     if fmt == "csv":
         return _read_csv(path)
-    raise ValueError(f"Unsupported manifest format: {fmt}")
+    raise ValueError(f"Направильный формат: {fmt}")
 
 
 def _insert_stg_rows(
@@ -1854,9 +1848,28 @@ def run_refresh_client_profile_export(context: dict[str, Any]) -> None:
         conn.commit()
 
 
-@dag(
+_LOAD_SOURCES_TASK_ID = "load_sources_to_staging"
+
+
+def _load_sources_to_staging_task() -> int:
+    return run_load_sources_to_staging(get_current_context())
+
+
+def _transform_stg_to_dwh_task() -> int:
+    ctx = get_current_context()
+    batch_id = ctx["ti"].xcom_pull(task_ids=_LOAD_SOURCES_TASK_ID)
+    if batch_id is None:
+        raise ValueError("batch_id не найден")
+    return run_transform_stg_to_dwh(ctx, int(batch_id))
+
+
+def _refresh_client_profile_export_task() -> None:
+    run_refresh_client_profile_export(get_current_context())
+
+
+with DAG(
     dag_id="load_data_to_dwh",
-    description="Загрузка из файлов (мультиформат: CSV, TSV, JSON/JSONL, XML, XLSX и т.д.) в stg, преобразование в dwh",
+    description="Загрузка из файлов (CSV, TSV, JSON/JSONL, XML, XLSX и т.д.) в stg, преобразование в dwh",
     schedule="@daily",
     start_date=pendulum.datetime(2026, 1, 1, tz="UTC"),
     catchup=False,
@@ -1866,24 +1879,18 @@ def run_refresh_client_profile_export(context: dict[str, Any]) -> None:
         "owner": "dwh",
         "retries": 1,
     },
-)
-def load_data_to_dwh():
-    @task(task_id="load_sources_to_staging")
-    def load_sources_to_staging() -> int:
-        return run_load_sources_to_staging(get_current_context())
+) as dag:
+    load_sources_to_staging = PythonOperator(
+        task_id=_LOAD_SOURCES_TASK_ID,
+        python_callable=_load_sources_to_staging_task,
+    )
+    transform_stg_to_dwh = PythonOperator(
+        task_id="transform_stg_to_dwh",
+        python_callable=_transform_stg_to_dwh_task,
+    )
+    refresh_client_profile_export = PythonOperator(
+        task_id="refresh_client_profile_export",
+        python_callable=_refresh_client_profile_export_task,
+    )
 
-    @task(task_id="transform_stg_to_dwh")
-    def transform_stg_to_dwh(batch_id: int) -> int:
-        return run_transform_stg_to_dwh(get_current_context(), batch_id)
-
-    @task(task_id="refresh_client_profile_export")
-    def refresh_client_profile_export() -> None:
-        run_refresh_client_profile_export(get_current_context())
-
-    b = load_sources_to_staging()
-    t = transform_stg_to_dwh(b)
-    r = refresh_client_profile_export()
-    t >> r
-
-
-load_data_to_dwh()
+    load_sources_to_staging >> transform_stg_to_dwh >> refresh_client_profile_export

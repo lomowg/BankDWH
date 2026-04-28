@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Выполняется образом ClickHouse из /docker-entrypoint-initdb.d (подкаталоги не обрабатываются автоматически).
+# Выполняется образом ClickHouse из /docker-entrypoint-initdb.d.
 (
   set -euo pipefail
   ROOT=/docker-entrypoint-initdb.d

@@ -1,4 +1,4 @@
--- Витрина «Профиль клиента»: показатели на отчётную дату (OLAP-слой)
+-- Витрина «Профиль клиента»
 CREATE TABLE IF NOT EXISTS bank_marts.mart_client_profile
 (
     report_date Date COMMENT 'Отчётная дата',

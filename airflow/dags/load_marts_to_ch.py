@@ -1,10 +1,10 @@
 """
-Синхронизация витрин PostgreSQL (dwh) → ClickHouse (bank_marts).
+Синхронизация витрин PostgreSQL (dwh) и ClickHouse (bank_marts).
 
 Параметры, все поля необязательны:
-  {"report_date": "2026-04-04"}     — срез для mart_client_profile и mart_segment_metrics
-  {"activity_from": "2026-01-01", "activity_to": "2026-04-04"}  — диапазон для дневных витрин
-  {"activity_days_back": 120}       — если границы не заданы: от (report_date − N) до report_date
+  {"report_date": "2026-04-04"} - срез для mart_client_profile и mart_segment_metrics
+  {"activity_from": "2026-01-01", "activity_to": "2026-04-04"} - диапазон для дневных витрин
+  {"activity_days_back": 120} - если границы не заданы: от (report_date − N) до report_date
   
 """
 
@@ -15,8 +15,8 @@ from typing import Any, Iterable, Sequence
 
 import pendulum
 import psycopg
-from airflow.decorators import dag, task
-from airflow.operators.python import get_current_context
+from airflow import DAG
+from airflow.operators.python import PythonOperator, get_current_context
 from bank_dwh import ch_client, ch_database, database_url
 from bank_dwh.airflow_utils import activity_date_range, dag_conf, report_date_for_dag
 
@@ -271,7 +271,8 @@ DIG_COLS = [
 ]
 
 
-def sync_mart_client_profile_task(context: dict[str, Any]) -> int:
+def sync_mart_client_profile_task() -> int:
+    context = get_current_context()
     conf = dag_conf(context)
     rd = report_date_for_dag(context, conf)
     ch = ch_client()
@@ -283,7 +284,8 @@ def sync_mart_client_profile_task(context: dict[str, Any]) -> int:
             return _insert_batches(ch, "mart_client_profile", PROFILE_COLS, cur.fetchall())
 
 
-def sync_mart_segment_metrics_task(context: dict[str, Any]) -> int:
+def sync_mart_segment_metrics_task() -> int:
+    context = get_current_context()
     conf = dag_conf(context)
     rd = report_date_for_dag(context, conf)
     ch = ch_client()
@@ -296,7 +298,8 @@ def sync_mart_segment_metrics_task(context: dict[str, Any]) -> int:
             return _insert_batches(ch, "mart_segment_metrics", SEGMENT_COLS, rows)
 
 
-def sync_mart_activity_daily_task(context: dict[str, Any]) -> int:
+def sync_mart_activity_daily_task() -> int:
+    context = get_current_context()
     conf = dag_conf(context)
     d0, d1 = activity_date_range(context, conf)
     ch = ch_client()
@@ -309,7 +312,8 @@ def sync_mart_activity_daily_task(context: dict[str, Any]) -> int:
             return _insert_batches(ch, "mart_client_activity_daily", ACTIVITY_COLS, rows)
 
 
-def sync_mart_financial_daily_task(context: dict[str, Any]) -> int:
+def sync_mart_financial_daily_task() -> int:
+    context = get_current_context()
     conf = dag_conf(context)
     d0, d1 = activity_date_range(context, conf)
     ch = ch_client()
@@ -322,7 +326,8 @@ def sync_mart_financial_daily_task(context: dict[str, Any]) -> int:
             return _insert_batches(ch, "mart_financial_activity_daily", FIN_COLS, rows)
 
 
-def sync_mart_digital_activity_daily_task(context: dict[str, Any]) -> int:
+def sync_mart_digital_activity_daily_task() -> int:
+    context = get_current_context()
     conf = dag_conf(context)
     d0, d1 = activity_date_range(context, conf)
     ch = ch_client()
@@ -335,9 +340,9 @@ def sync_mart_digital_activity_daily_task(context: dict[str, Any]) -> int:
             return _insert_batches(ch, "mart_digital_activity_daily", DIG_COLS, rows)
 
 
-@dag(
+with DAG(
     dag_id="load_marts_to_ch",
-    description="PostgreSQL dwh → ClickHouse bank_marts (витрины OLAP)",
+    description="PostgreSQL dwh -> ClickHouse bank_marts (витрины)",
     schedule="@daily",
     start_date=pendulum.datetime(2026, 1, 1, tz="UTC"),
     catchup=False,
@@ -347,33 +352,24 @@ def sync_mart_digital_activity_daily_task(context: dict[str, Any]) -> int:
         "owner": "dwh",
         "retries": 1,
     },
-)
-def load_marts_to_ch():
-    @task(task_id="sync_mart_client_profile")
-    def sync_mart_client_profile() -> int:
-        return sync_mart_client_profile_task(get_current_context())
-
-    @task(task_id="sync_mart_segment_metrics")
-    def sync_mart_segment_metrics() -> int:
-        return sync_mart_segment_metrics_task(get_current_context())
-
-    @task(task_id="sync_mart_client_activity_daily")
-    def sync_mart_client_activity_daily() -> int:
-        return sync_mart_activity_daily_task(get_current_context())
-
-    @task(task_id="sync_mart_financial_activity_daily")
-    def sync_mart_financial_activity_daily() -> int:
-        return sync_mart_financial_daily_task(get_current_context())
-
-    @task(task_id="sync_mart_digital_activity_daily")
-    def sync_mart_digital_activity_daily() -> int:
-        return sync_mart_digital_activity_daily_task(get_current_context())
-
-    sync_mart_client_profile()
-    sync_mart_segment_metrics()
-    sync_mart_client_activity_daily()
-    sync_mart_financial_activity_daily()
-    sync_mart_digital_activity_daily()
-
-
-load_marts_to_ch()
+) as dag:
+    PythonOperator(
+        task_id="sync_mart_client_profile",
+        python_callable=sync_mart_client_profile_task,
+    )
+    PythonOperator(
+        task_id="sync_mart_segment_metrics",
+        python_callable=sync_mart_segment_metrics_task,
+    )
+    PythonOperator(
+        task_id="sync_mart_client_activity_daily",
+        python_callable=sync_mart_activity_daily_task,
+    )
+    PythonOperator(
+        task_id="sync_mart_financial_activity_daily",
+        python_callable=sync_mart_financial_daily_task,
+    )
+    PythonOperator(
+        task_id="sync_mart_digital_activity_daily",
+        python_callable=sync_mart_digital_activity_daily_task,
+    )

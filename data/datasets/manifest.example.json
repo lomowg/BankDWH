@@ -1,5 +1,5 @@
 {
-  "_comment": "Копируйте фрагменты в manifest.json; пути file — относительно data/datasets/",
+  "_comment": "Пути file — относительно data/datasets/",
   "additional_loaders": [
     {
       "file": "Banking and Customer Transaction Data/transaction_data.csv",

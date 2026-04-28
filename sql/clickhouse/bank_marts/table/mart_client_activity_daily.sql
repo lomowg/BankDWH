@@ -1,4 +1,4 @@
--- Витрина «Активность клиента»: ежедневные агрегаты по каналам
+-- Витрина «Активность клиента»
 CREATE TABLE IF NOT EXISTS bank_marts.mart_client_activity_daily
 (
     activity_date Date COMMENT 'Календарный день',

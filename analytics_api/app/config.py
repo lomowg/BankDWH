@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     clickhouse_host: str = "localhost"
     clickhouse_http_port: int = 8123
     clickhouse_user: str = "default"
-    clickhouse_password: str = ""
+    clickhouse_password: str = "ch_dwh_secret"
     clickhouse_database: str = "bank_marts"
     analytics_api_key: str = ""
 

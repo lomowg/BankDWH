@@ -1,4 +1,3 @@
-# Run from repo root: powershell -ExecutionPolicy Bypass -File k8s/apply.ps1
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location $Root

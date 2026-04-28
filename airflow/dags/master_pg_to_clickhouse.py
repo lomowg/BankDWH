@@ -12,7 +12,7 @@ default_args = {
 
 with DAG(
     dag_id="master_pg_to_clickhouse",
-    description="PostgreSQL → ClickHouse (витрины)",
+    description="PostgreSQL -> ClickHouse (витрины)",
     schedule="@daily",
     start_date=pendulum.datetime(2026, 1, 1, tz="UTC"),
     catchup=False,

@@ -48,7 +48,7 @@ def _safe_fetch(sql: str, parameters: dict[str, Any] | None = None) -> list[dict
 
 @router.get("/client-profile", summary="Витрина профиля клиента (mart_client_profile)")
 def client_profile(
-    report_date: date | None = Query(None, description="Отчётная дата; если не задана — max(report_date) в витрине"),
+    report_date: date | None = Query(None, description="Отчётная дата; если не задана - max(report_date) в витрине"),
     client_id: int | None = Query(None, ge=1),
     limit: int = Query(_DEFAULT_LIMIT, ge=1, le=_MAX_LIMIT),
     offset: int = Query(0, ge=0),
