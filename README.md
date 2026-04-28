@@ -35,6 +35,8 @@ kubectl port-forward -n bank-dwh svc/airflow-webserver 8080:8080
 kubectl port-forward -n bank-dwh svc/grafana 3000:3000
 kubectl port-forward -n bank-dwh svc/prometheus 9090:9090
 kubectl port-forward -n bank-dwh svc/analytics-api 8000:8000
+kubectl port-forward -n bank-dwh svc/postgres 15432:5432
+kubectl port-forward -n bank-dwh svc/clickhouse 8123:8123
 ```
 
 **В браузере**
