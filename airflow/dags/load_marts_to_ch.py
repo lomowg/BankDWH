@@ -9,7 +9,7 @@
 """
 
 from __future__ import annotations
-
+from airflow.models.param import Param
 from datetime import date
 from typing import Any, Iterable, Sequence
 
@@ -346,6 +346,12 @@ with DAG(
     schedule="@daily",
     start_date=pendulum.datetime(2026, 1, 1, tz="UTC"),
     catchup=False,
+    params={
+        "report_date": Param("", type=["string", "null"], title="Отчётная дата"),
+        "activity_from": Param("", type=["string", "null"], title="Дата начала периода активности"),
+        "activity_to": Param("", type=["string", "null"], title="Дата окончания периода активности"),
+        "activity_days_back": Param(120, type="integer", title="Количество дней назад"),
+    },
     tags=["dwh", "clickhouse", "postgresql"],
     doc_md=__doc__,
     default_args={

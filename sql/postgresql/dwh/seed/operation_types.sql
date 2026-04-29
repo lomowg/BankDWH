@@ -16,6 +16,6 @@ INSERT INTO dwh.operation_types (operation_type_id, operation_type_code, operati
     (15, 'RCDT', 'Банк.код: списание'),
     (16, 'PMNT', 'Банк.код: платёж'),
     (17, 'CCRD', 'Банк.код: карта'),
-    (18, 'CAMT_STMT', 'ISO 20022: проводка выписки'),
-    (19, 'CAMT_NTF', 'ISO 20022: кредитовое уведомление')
+    (18, 'CAMT_STMT', 'Проводка выписки'),
+    (19, 'CAMT_NTF', 'Кредитовое уведомление')
 ON CONFLICT (operation_type_id) DO NOTHING;

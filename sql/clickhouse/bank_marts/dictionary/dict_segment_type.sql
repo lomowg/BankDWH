@@ -6,8 +6,12 @@ CREATE DICTIONARY IF NOT EXISTS bank_marts.dict_segment_type
 )
 PRIMARY KEY segment_type_id
 SOURCE(CLICKHOUSE(
-    DB 'bank_marts'
-    TABLE 'dim_segment_type'
+    host 'localhost'
+    port 9000
+    user 'default'
+    __CLICKHOUSE_PASSWORD_FOR_DICT__
+    db 'bank_marts'
+    table 'dim_segment_type'
 ))
 LAYOUT(FLAT())
 LIFETIME(MIN 60 MAX 300);

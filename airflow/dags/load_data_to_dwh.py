@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from airflow.models.param import Param
 import csv
 import io
 import json
@@ -1873,6 +1874,10 @@ with DAG(
     schedule="@daily",
     start_date=pendulum.datetime(2026, 1, 1, tz="UTC"),
     catchup=False,
+    params={
+        "reset": Param(False, type="boolean", title="Очистить таблицы перед загрузкой"),
+        "report_date": Param("", type=["string", "null"], title="Отчётная дата, например 2026-04-01"),
+    },
     tags=["dwh", "etl", "postgresql"],
     doc_md=__doc__,
     default_args={

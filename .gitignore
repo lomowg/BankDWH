@@ -5,3 +5,4 @@ __pycache__/
 venv/
 airflow/logs/*
 !airflow/logs/.gitkeep
+.idea/
