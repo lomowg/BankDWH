@@ -30,6 +30,9 @@ from psycopg.types.json import Json
 _DAGS_DIR = Path(__file__).resolve().parent
 
 
+_STG_INSERT_CHUNK_ROWS = 10_000
+
+
 def _read_csv(path: Path) -> list[dict[str, Any]]:
     """Читает CSV в Unicode: UTF-8 (с BOM), UTF-16 LE/BE, иначе UTF-8 или cp1251"""
     raw = path.read_bytes()
@@ -120,15 +123,23 @@ def _insert_stg_rows(
     columns: tuple[str, ...],
     rows: list[dict[str, Any]],
 ) -> None:
+    if not rows:
+        return
     col_list = ", ".join(["batch_id", *columns])
     placeholders = ", ".join(["%s"] * (1 + len(columns)))
     sql = f"INSERT INTO {table} ({col_list}) VALUES ({placeholders})"
-    for r in rows:
-        values: list[Any] = [batch_id]
+
+    def row_values(r: dict[str, Any]) -> tuple[Any, ...]:
+        vals: list[Any] = [batch_id]
         for c in columns:
             v = r.get(c)
-            values.append(v if v != "" else None)
-        cur.execute(sql, values)
+            vals.append(v if v != "" else None)
+        return tuple(vals)
+
+    step = _STG_INSERT_CHUNK_ROWS
+    for i in range(0, len(rows), step):
+        chunk = rows[i : i + step]
+        cur.executemany(sql, [row_values(r) for r in chunk])
 
 
 def _load_manifest_extra(
