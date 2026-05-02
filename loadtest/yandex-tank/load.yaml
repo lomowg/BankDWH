@@ -1,0 +1,25 @@
+phantom:
+  address: analytics-api:8000
+  ssl: false
+  headers:
+    - "[Host: analytics-api:8000]"
+    # - "[X-API-Key: your-secret-here]"
+  uris:
+    - /health
+    - /v1/marts/segment-metrics
+    - /v1/marts/client-profile?limit=50
+    - /v1/marts/client-profile?client_id=1
+    - /v1/marts/client-segmentation?limit=50
+    - /v1/marts/client-activity-daily?from=2026-03-10&to=2026-05-20&limit=100
+    - /v1/marts/financial-activity-daily?from=2026-03-10&to=2026-05-20&limit=100
+    - /v1/marts/digital-activity-daily?from=2026-03-10&to=2026-05-20&limit=100
+  load_profile:
+    load_type: rps
+    # Линейный рост 1 к 25 RPS за 3 минуты
+    schedule: line(1, 25, 3m)
+
+console:
+  enabled: true
+
+telegraf:
+  enabled: false

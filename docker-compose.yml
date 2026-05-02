@@ -254,6 +254,21 @@ services:
       - clickhouse
     restart: unless-stopped
 
+  # Нагрузочное тестирование: https://github.com/yandex/yandex-tank
+  # Запуск: docker compose --profile loadtest run --rm yandex-tank
+  yandex-tank:
+    profiles: ["loadtest"]
+    build:
+      context: ./loadtest/yandex-tank
+      dockerfile: Dockerfile
+    image: bank_dwh_yandex_tank:1.0
+    container_name: bank_yandex_tank
+    volumes:
+      - ./loadtest/yandex-tank:/var/loadtest
+    working_dir: /var/loadtest
+    depends_on:
+      - analytics-api
+
 volumes:
   postgres_data:
   clickhouse_data:

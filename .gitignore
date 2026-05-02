@@ -6,3 +6,5 @@ venv/
 airflow/logs/*
 !airflow/logs/.gitkeep
 .idea/
+loadtest/yandex-tank/logs
+loadtest/yandex-tank/tank_errors.log
