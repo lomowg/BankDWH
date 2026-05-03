@@ -1558,8 +1558,13 @@ def recompute_client_segments(conn: psycopg.Connection, report_date: date) -> No
     ACTIVE - умеренная активность 30д: >= 3 операций, или >= 6 цифровых событий, или оборот >= 15k.
     LOW_ACTIVITY - остальные клиенты
     """
+    segment_new_max_days = 21
+    segment_dormant_inactivity_days = 120
+    segment_active_min_op_30 = 5
+    segment_active_min_ev_30 = 10
+    segment_active_min_turnover_30 = 28_000
     delete_sql = "DELETE FROM dwh.client_segments_history WHERE assigned_by = 'ETL_SEGMENTATION'"
-    insert_sql = """
+    insert_sql = f"""
     WITH tx30 AS (
         SELECT
             client_id,
@@ -1597,7 +1602,7 @@ def recompute_client_segments(conn: psycopg.Connection, report_date: date) -> No
     metrics AS (
         SELECT
             c.client_id,
-            COALESCE(c.registration_date, (c.created_at AT TIME ZONE 'UTC')::date) AS anchor_date,
+            c.registration_date,
             COALESCE(t.op_30, 0) AS op_30,
             COALESCE(t.debit_30, 0) + COALESCE(t.credit_30, 0) AS turnover_30,
             la.last_tx_ts,
@@ -1615,18 +1620,26 @@ def recompute_client_segments(conn: psycopg.Connection, report_date: date) -> No
         SELECT
             client_id,
             CASE
-                WHEN anchor_date >= %(rd)s::date - INTERVAL '90 days' THEN 3::smallint
-                WHEN anchor_date < %(rd)s::date - INTERVAL '90 days'
+                WHEN registration_date IS NOT NULL
+                    AND registration_date >= %(rd)s::date - INTERVAL '{segment_new_max_days} days'
+                    THEN 3::smallint
+                WHEN NOT (
+                        registration_date IS NOT NULL
+                        AND registration_date >= %(rd)s::date - INTERVAL '{segment_new_max_days} days'
+                    )
                     AND (
                         (last_tx_ts IS NULL AND last_ev_ts IS NULL)
                         OR GREATEST(
                             COALESCE((last_tx_ts AT TIME ZONE 'UTC')::date, DATE '1970-01-01'),
                             COALESCE((last_ev_ts AT TIME ZONE 'UTC')::date, DATE '1970-01-01')
-                        ) < %(rd)s::date - INTERVAL '180 days'
+                        ) < %(rd)s::date - INTERVAL '{segment_dormant_inactivity_days} days'
                     )
                     THEN 4::smallint
                 WHEN turnover_30 >= 250000 OR op_30 >= 12 OR active_products >= 4 THEN 5::smallint
-                WHEN op_30 >= 3 OR ev_30 >= 6 OR turnover_30 >= 15000 THEN 1::smallint
+                WHEN op_30 >= {segment_active_min_op_30}
+                    OR ev_30 >= {segment_active_min_ev_30}
+                    OR turnover_30 >= {segment_active_min_turnover_30}
+                    THEN 1::smallint
                 ELSE 2::smallint
             END AS segment_type_id
         FROM metrics
