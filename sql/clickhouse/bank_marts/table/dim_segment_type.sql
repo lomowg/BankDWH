@@ -1,9 +1,9 @@
 -- Справочник типов сегментации (для словаря dict_segment_type и витрины-представления)
 CREATE TABLE IF NOT EXISTS bank_marts.dim_segment_type
 (
-    segment_type_id UInt16,
-    segment_type_code LowCardinality(String),
-    segment_type_name String
+    segment_type_id UInt16 CODEC(LZ4),
+    segment_type_code LowCardinality(String) CODEC(LZ4),
+    segment_type_name String CODEC(ZSTD(3))
 )
 ENGINE = MergeTree
 ORDER BY segment_type_id;
